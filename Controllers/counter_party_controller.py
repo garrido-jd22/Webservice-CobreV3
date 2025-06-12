@@ -1,0 +1,47 @@
+from flask import jsonify
+from Database.database import Session
+from Models.counter_party import CounterParty as CounterPartyModel
+
+class CounterParty:
+    # Constructor de la clase
+    def __init__(self):
+        self.session = Session()
+
+    # Destructor de la clase
+    def __del__(self):
+        self.session.close()
+
+    # Get all counter parties
+    def get_all_counter_party(self):
+        counter_party = []
+        counter_party = self.session.query(CounterPartyModel).all()
+        
+        if counter_party:
+            counter_party_dict = []
+            for counter in counter_party:
+                counter_party_dict.append(
+                    {
+                        "id": counter.id,
+                        "geo": counter.geo,
+                        "type": counter.tipe,
+                        "alias": counter.alias,
+                        "metadata": {
+                            "account_number": counter.account_number,
+                            "counterparty_fullname": counter.counterparty_full_name,
+                            "counterparty_id_type": counter.counterparty_id_type,
+                            "counterparty_id_number": counter.counterparty_id_number,
+                        },
+                    }
+                )
+            return jsonify(counter_party_dict), 200
+        else:
+            return jsonify({"message": "Error al obtener las etapas"}), 500
+
+    def get_counter_party(self, id_counter_party):
+        return False
+    
+    def set_counter_party(self):
+        return False
+    
+    def update_counter_party(self, id_counter_party):
+        return False
