@@ -27,9 +27,12 @@ class CounterParty:
                         "alias": counter.alias,
                         "metadata": {
                             "account_number": counter.account_number,
-                            "counterparty_fullname": counter.counterparty_full_name,
+                            "counterparty_fullname": counter.counterparty_fullname,
                             "counterparty_id_type": counter.counterparty_id_type,
                             "counterparty_id_number": counter.counterparty_id_number,
+                            "counterparty_phone": counter.counterparty_phone,
+                            "counterparty_email": counter.counterparty_email,
+                            "registered_account": counter.registered_account,
                         },
                     }
                 )
