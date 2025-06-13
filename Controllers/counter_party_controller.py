@@ -1,6 +1,8 @@
 from flask import jsonify
 from Database.database import Session
 from Models.counter_party import CounterParty as CounterPartyModel
+import json
+
 
 class CounterParty:
     # Constructor de la clase
@@ -15,7 +17,7 @@ class CounterParty:
     def get_all_counter_party(self):
         counter_party = []
         counter_party = self.session.query(CounterPartyModel).all()
-        
+
         if counter_party:
             counter_party_dict = []
             for counter in counter_party:
@@ -42,9 +44,16 @@ class CounterParty:
 
     def get_counter_party(self, id_counter_party):
         return False
-    
-    def set_counter_party(self):
-        return False
-    
+
+    def set_counter_party(self, datos_csv):
+        print(
+            "data recibida dentro de la funcion para insertar en la db = ",
+            datos_csv,
+        )
+        self.session.add_all(datos_csv)
+        self.session.commit()
+        print("datos ingresados en la tabla correctamente")
+        return jsonify({"message": "datos ingresados en la tabla correctamente."})
+
     def update_counter_party(self, id_counter_party):
         return False
