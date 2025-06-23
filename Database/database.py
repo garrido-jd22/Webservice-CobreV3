@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from contextlib import contextmanager
 from dotenv import load_dotenv
 import os
+
 load_dotenv()
 
 connect_url = URL.create(
@@ -19,7 +20,8 @@ connect_url = URL.create(
 
 engine = create_engine(connect_url, poolclass=NullPool)
 Session = sessionmaker(
-    autocommit=False, autoflush=False, bind=engine, expire_on_commit=False)
+    autocommit=False, autoflush=False, bind=engine, expire_on_commit=False
+)
 Base = declarative_base()
 
 
