@@ -1,7 +1,9 @@
 from flask import jsonify
 from Database.database import Session
 from Models.counter_party import CounterParty as CounterPartyModel
-from Controllers.counter_party_controller import CounterParty as CounterPartyController
+
+# from Controllers.counter_party_controller import CounterParty as CounterPartyController
+from Controllers.counter_parties_controller import CounterParty
 import csv
 from datetime import datetime
 import json
@@ -59,8 +61,9 @@ class ManagementFileController:
 
                     # Almacena todos los diccionarios en una lista
                     counter_parties.append(counter_party)
-
-                CounterPartyController.set_counter_party(self, counter_parties)
+                # enviar la data leida del archivo csv al guardar en la base de datos y enviar por post a una api externa
+                # CounterPartyController.set_counter_party(self, counter_parties)
+                CounterParty().set_counter_party(self, counter_parties)
 
             return (
                 jsonify(

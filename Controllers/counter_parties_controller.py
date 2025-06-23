@@ -50,7 +50,7 @@ class CounterParty:
     def get_counter_party(self, id_counter_party):
         return False
 
-    # insertar payload en la abse de datos
+    # insertar payload en la base de datos
     def insert_database(self, cobre_payload: dict):
         """
         Guarda los datos en la base de datos de los counterparty a enviar por la API de Cobre
