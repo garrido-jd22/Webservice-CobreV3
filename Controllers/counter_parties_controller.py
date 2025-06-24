@@ -93,7 +93,7 @@ class CounterParty:
             return None
 
     # ingresa un counterparty(cliente al que hay que hacerle el debito)
-    def set_counter_party(self, data):
+    def set_counter_party(self, data: list):
         """
         Método para crear un nuevo counter party en la API de Cobre
 

@@ -7,7 +7,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Routes
-from Routes.counter_parties_router import counterPartyRoutes
+from Routes.counter_party_router import counterPartyRoutes
 from Routes.auth_token import AuthTokenRoutes
 from Controllers.auth_token_controller import cache
 
