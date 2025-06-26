@@ -1,7 +1,6 @@
 from flask import jsonify
 from Database.database import Session
 from Models.counter_party import CounterParty as CounterPartyModel
-import json
 
 
 class CounterParty:
@@ -25,7 +24,7 @@ class CounterParty:
                     {
                         "id": counter.id,
                         "geo": counter.geo,
-                        "type": counter.tipe,
+                        "type": counter.type,
                         "alias": counter.alias,
                         "metadata": {
                             "account_number": counter.account_number,
@@ -34,7 +33,7 @@ class CounterParty:
                             "counterparty_id_number": counter.counterparty_id_number,
                             "counterparty_phone": counter.counterparty_phone,
                             "counterparty_email": counter.counterparty_email,
-                            "registered_account": counter.registered_account,
+                            # "registered_account": counter.registered_account, RELACION FK_COUNTERPARTY_ACCOUNT
                         },
                     }
                 )
@@ -43,7 +42,26 @@ class CounterParty:
             return jsonify({"message": "Error al obtener las etapas"}), 500
 
     def get_counter_party(self, id_counter_party):
-        return False
+        counter_party_by_id = (
+            self.session.query(CounterPartyModel)
+            .filter(CounterPartyModel.id == id_counter_party)
+            .first()
+        )
+        counter_party = {
+            "id": counter_party_by_id.id,
+            "geo": counter_party_by_id.geo,
+            "type": counter_party_by_id.type,
+            "alias": counter_party_by_id.alias,
+            "metadata": {
+                "account_number": counter_party_by_id.account_number,
+                "counterparty_fullname": counter_party_by_id.counterparty_fullname,
+                "counterparty_id_type": counter_party_by_id.counterparty_id_type,
+                "counterparty_id_number": counter_party_by_id.counterparty_id_number,
+                "counterparty_phone": counter_party_by_id.counterparty_phone,
+                "counterparty_email": counter_party_by_id.counterparty_email,
+            },
+        }
+        return jsonify(counter_party), 200
 
     def set_counter_party(self, datos_csv):
         print(
@@ -56,4 +74,4 @@ class CounterParty:
         return jsonify({"message": "datos ingresados en la tabla correctamente."})
 
     def update_counter_party(self, id_counter_party):
-        return False
+        return id_counter_party

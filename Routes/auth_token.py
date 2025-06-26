@@ -4,7 +4,7 @@ from datetime import datetime
 
 from Controllers.auth_token_controller import Token
 
-AuthTokenRoutes = Blueprint("auth_token", __name__)
+authTokenRoutes = Blueprint("auth_token", __name__)
 
 
 def format_time_remaining(seconds):
@@ -25,7 +25,7 @@ def format_time_remaining(seconds):
 # -- recomendacion --
 # esta ruta en especifica debe estar creada en un archivo nuevo
 # el archivo debe tener la ruta y el servicio al que estara enlazado para obtener el token
-@AuthTokenRoutes.route("/get-token-auth", methods=["GET"])
+@authTokenRoutes.route("/get-token-auth", methods=["GET"])
 def get_token_auth():
 
     try:
