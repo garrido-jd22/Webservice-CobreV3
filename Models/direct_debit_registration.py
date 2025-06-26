@@ -15,6 +15,7 @@ class DirectDebitRegistration(Base):
         String(50), ForeignKey("counterparty.id")
     )
     registration_description: Mapped[str] = mapped_column(String(255))
+    state_local: Mapped[str]
     state: Mapped[str]
     code: Mapped[str]
     description: Mapped[str]
@@ -26,6 +27,7 @@ class DirectDebitRegistration(Base):
             "id": self.id,
             "destination_id": self.destination_id,
             "registration_description": self.registration_description,
+            "state_local": self.state_local,
             "state": self.state,
             "code": self.code,
             "description": self.description,

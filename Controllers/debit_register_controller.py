@@ -72,6 +72,7 @@ class DebitRegister:
                             },
                             "account_type": acc.account_type,
                         },
+                        "state_local": ddr.state_local,
                         "status": {
                             "state": ddr.state,
                             "code": ddr.code,
@@ -98,6 +99,8 @@ class DebitRegister:
                 destination_id=data["destination_id"],  # Id Cobre Balance
                 registration_description=data["registration_description"],
                 fk_counterparty=counterparty_id,  # Id del counterparty
+                # Estos campos miden el estado del registro en la BD local
+                state_local=data["state_local"],
                 # Estos campos miden el estado del registro
                 state=data["state"],
                 code=data["code"],
