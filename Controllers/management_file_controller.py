@@ -85,7 +85,7 @@ class ManagementFileController:
                 jsonify(
                     {
                         "message": "Archivo procesado exitosamente",
-                        "data": data_csv,
+                        "data": cp_data_load[0].get_json()
                     }
                 ),
                 200,

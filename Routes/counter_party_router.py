@@ -35,10 +35,9 @@ def process_csv_file():
         lector_csv = csv.DictReader(archivo_stream)
         data_csv = list(lector_csv)
 
-        datos_csv = ManagementFileController().read_file_csv(data_csv)
-        print("datos de respuesta del file management controller = ", datos_csv)
+        data_saved = ManagementFileController().read_file_csv(data_csv)
 
-        return datos_csv
+        return data_saved
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
