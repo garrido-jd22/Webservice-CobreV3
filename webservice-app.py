@@ -13,6 +13,7 @@ from Controllers.auth_token_controller import cache
 from Routes.counter_party_router import counterPartyRoutes
 from Routes.auth_token import authTokenRoutes
 from Routes.cobre_balance_router import cobreBalanceRoutes
+from Routes.debit_register_router import debitRegisterRoutes
 
 app = Flask(__name__)
 load_dotenv()
@@ -27,6 +28,7 @@ cache.init_app(app)
 # ruta para los routes
 app.register_blueprint(counterPartyRoutes)
 app.register_blueprint(cobreBalanceRoutes)
+app.register_blueprint(debitRegisterRoutes)
 # ruta para la autenticacion del token
 app.register_blueprint(authTokenRoutes)
 

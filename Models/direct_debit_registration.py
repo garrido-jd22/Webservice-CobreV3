@@ -11,6 +11,9 @@ class DirectDebitRegistration(Base):
     destination_id: Mapped[str] = mapped_column(
         String(50), ForeignKey("cobre_balance.id")
     )
+    fk_counterparty: Mapped[str] = mapped_column(
+        String(50), ForeignKey("counterparty.id")
+    )
     registration_description: Mapped[str] = mapped_column(String(255))
     state: Mapped[str]
     code: Mapped[str]

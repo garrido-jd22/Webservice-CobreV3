@@ -1,3 +1,4 @@
+import datetime
 from flask import jsonify
 from Database.database import Session
 from Models.counter_party import CounterParty as CounterPartyModel
@@ -72,6 +73,34 @@ class CounterParty:
         self.session.commit()
         print("datos ingresados en la tabla correctamente")
         return jsonify({"message": "datos ingresados en la tabla correctamente."})
+
+    def get_counter_party_by_id_load(self, id_data_load):
+        counter_party_by_id_load = (
+            self.session.query(CounterPartyModel)
+            .filter(CounterPartyModel.fk_data_load == id_data_load)
+            .all()
+        )
+        counter_party = []
+
+        for cp in counter_party_by_id_load:
+            counter_party.append(
+                {
+                    "id": cp.id,
+                    "geo": cp.geo,
+                    "type": cp.type,
+                    "alias": cp.alias,
+                    "metadata": {
+                        "account_number": cp.account_number,
+                        "counterparty_fullname": cp.counterparty_fullname,
+                        "counterparty_id_type": cp.counterparty_id_type,
+                        "counterparty_id_number": cp.counterparty_id_number,
+                        "counterparty_phone": cp.counterparty_phone,
+                        "counterparty_email": cp.counterparty_email,
+                    },
+                }
+            )
+
+        return jsonify(counter_party), 200
 
     def update_counter_party(self, id_counter_party):
         return id_counter_party

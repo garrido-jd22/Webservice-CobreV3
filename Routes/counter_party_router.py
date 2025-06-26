@@ -27,3 +27,8 @@ def process_csv_file(file_path):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@counterPartyRoutes.route("/get-counterparty-id-load/<id_load>", methods=["GET"])
+def get_counter_party_by_id_load(id_load):
+    return CounterParty().get_counter_party_by_id_load(id_load)
