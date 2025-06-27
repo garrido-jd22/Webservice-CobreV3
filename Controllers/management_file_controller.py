@@ -1,7 +1,7 @@
 from flask import jsonify
 from Database.database import Session
-
-import csv
+import threading
+import logging
 import uuid
 from datetime import datetime
 
@@ -12,13 +12,16 @@ from Controllers.debit_register_controller import (
     DebitRegister as DebitRegisterController,
 )
 
-# from Controllers.money_movements_controller import MoneyMovementsController
+# Configuración del logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class ManagementFileController:
 
     def __init__(self):
         self.session = Session()
+        self.debit_register = DebitRegisterController()
 
     def __del__(self):
         self.session.close()
@@ -35,12 +38,14 @@ class ManagementFileController:
             DataLoadController.set_data_load(self, id_data_load, "PENDING")
 
             counter_parties = []
+            data_money = []
             count = 0
 
             for row in data_csv:
                 count += 1
+                id_cpp = generator_id("cp_00", count)
                 counter_party = CounterPartyModel(
-                    id=generator_id("cp_00", count),
+                    id=id_cpp,
                     fk_data_load=id_data_load,
                     geo=row["geo"],
                     type=row["type"],
@@ -55,6 +60,20 @@ class ManagementFileController:
                     fecha_reg=datetime.now(),
                 )
                 counter_parties.append(counter_party)
+
+                data_money.append(
+                    {
+                        "source_id": "acc_0011223344",
+                        "destination_id": id_cpp,
+                        "amount": row["amount"],
+                        "external_id": "ext_id_to_trck_payment",
+                        "metadata": {
+                            "description": "my very first SPEI payment!",
+                            "reference": "1234567",
+                        },
+                        "checker_approval": False,
+                    }
+                )
 
             CounterPartyController.set_counter_party(self, counter_parties)
 
@@ -78,25 +97,23 @@ class ManagementFileController:
                         "description": "PENDING",
                     },
                 )
-            DebitRegisterController.set_list_debit_registration(self, list_data_debit)
-            debit_result = DebitRegisterController().get_debit_register_status(
-                self, data_csv
+
+            # Registra los débitos directos en la base de datos en estado PENDING
+            DebitRegisterController.set_list_debit_registration(
+                self.debit_register, list_data_debit
             )
 
-            # Money Movement
-            # Primero consultar de debit register todos los Debitos Directos por el ID de carga de datos y por el estado RD000 o Registered.
-            # print("payload obtenido por estado y por id del  debit register", Results)
-            # Guardar los movimientos de dinero en la base de datos.
-            # money_movement_controller = MoneyMovementsController()
-            # Se asume que el estado es el mismo para todos los registros, se toma del primer elemento si existe
-            # estado = Results[0]["esatdoFinalRegisterDebit"] if Results else None
-            # money_movements_payload = money_movement_controller.set_money_movement(
-            #     Results, estado
-            # )
-            # print(
-            #     "payload generado por money_movement_controller:",
-            #     money_movements_payload,
-            # )
+            # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
+            # 10 SEGUNDOS #
+            logger.debug("activando temporizador...")
+
+            timer = threading.Timer(
+                10,
+                self.filter_money_movements,
+                args=(id_data_load,),
+            )  # con coma final para que sea una tupla de un solo elemento
+            timer.daemon = True
+            timer.start()
 
             return (
                 jsonify(
@@ -115,6 +132,28 @@ class ManagementFileController:
             )
         except Exception as e:
             return jsonify({"error": f"Error procesando el archivo: {str(e)}"}), 500
+
+    def filter_money_movements(self, id_data_load):
+        try:
+            # Actualizar el estado de los registros de débito directo
+            DebitRegisterController.update_debit_register_status(
+                self.debit_register, id_data_load
+            )
+
+            # Obtener los registros de débito directo actualizados en formato MONEY MOVEMENT
+            DebitRegisterController.get_debit_register_status(
+                self.debit_register, id_data_load, "Registered"
+            )
+
+            # Aquí podrías llamar a la función para registrar los movimientos de dinero
+            logger.debug(
+                "Creando movimientos de dinero a partir de los registros de débito directo..."
+            )
+
+            return "Registros actualizados"
+        except Exception as e:
+            logger.error(f"Error setting direct debit registrations: {e}")
+            return f"Error: {str(e)}"
 
 
 def generator_id(test, index):

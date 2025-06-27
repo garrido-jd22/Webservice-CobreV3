@@ -14,7 +14,6 @@ from Models.cobre_balance import (
 )
 from Models.cobre_balance import CobreAvailableServices as CobreAviableServicesModel
 from Models.counter_party import CounterParty as CounterPartyModel
-from Models.data_load import DataLoad as DataLoadModel
 
 
 # Configuración del logging
@@ -93,15 +92,6 @@ class DebitRegister:
             logger.error(f"Error retrieving direct debit registrations: {e}")
             return jsonify({"error": f"Error retrieving data: {str(e)}"}), 500
 
-    def get_debit_register_status(self, data_csv):
-        try:
-            # Consulta los registros con estado PENDING
-
-            return True
-        except Exception as e:
-            logger.error(f"Error setting direct debit registrations: {e}")
-            return jsonify({"error": f"Error: {str(e)}"}), 500
-
     def set_direct_debit_registrations(self, counterparty_id, data):
         try:
             debit_register = DirectDebitRegistrationModel(
@@ -167,19 +157,63 @@ class DebitRegister:
                 f"Registro de los debitos insertados correctamente with data: {data_list}"
             )
 
-            # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
-            # 30 SEGUNDOS ##
-            # logger.debug("activando temporizador...")
-
-            # timer = threading.Timer(30, self.get_debit_register_status)
-            # timer.daemon = True
-            # timer.start()
-            # print("temporizador activado")
-
             return jsonify({"message": "datos ingresados en la tabla correctamente.\n"})
         except Exception as e:
             logger.error(f"Error setting direct debit registrations: {e}")
             return jsonify({"error": f"Error: {str(e)}"}), 500
+
+    def update_debit_register_status(self, id_load):
+        try:
+            debit_register = (
+                self.session.query(DirectDebitRegistrationModel, CounterPartyModel)
+                .join(
+                    CounterPartyModel,
+                    CounterPartyModel.id
+                    == DirectDebitRegistrationModel.fk_counterparty,
+                )
+                .filter(
+                    CounterPartyModel.fk_data_load == id_load,
+                    DirectDebitRegistrationModel.state == "PENDING",
+                )
+                .all()
+            )
+            logger.debug(
+                f"Consultando informacion del Cobre balance e iterando registros para el id de carga: {id_load}"
+            )
+            for ddr, cp in debit_register:
+                ddr.state_local = "02"
+                ddr.state = "Registered"
+                ddr.code = "RD000"
+                ddr.description = "NA"
+
+            self.session.commit()
+            return f"{len(debit_register)} registros actualizados"
+
+        except Exception as e:
+            logger.error(f"Error setting direct debit registrations: {e}")
+            return f"Error: {str(e)}"
+
+    def get_debit_register_status(self, id_load, state):
+        try:
+            debit_register = (
+                self.session.query(DirectDebitRegistrationModel, CounterPartyModel)
+                .join(
+                    CounterPartyModel,
+                    CounterPartyModel.id
+                    == DirectDebitRegistrationModel.fk_counterparty,
+                )
+                .filter(
+                    CounterPartyModel.fk_data_load == id_load,
+                    DirectDebitRegistrationModel.state == state,
+                )
+                .all()
+            )
+
+            return f"{len(debit_register)} registros encontrados con estado {state}"
+
+        except Exception as e:
+            logger.error(f"Error setting direct debit registrations: {e}")
+            return f"Error: {str(e)}"
 
 
 def generator_id(text):
