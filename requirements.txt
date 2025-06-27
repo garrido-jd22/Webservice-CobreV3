@@ -14,6 +14,7 @@ filelock
 Flask
 Flask-JWT-Extended
 Flask-SQLAlchemy
+Flask_caching
 greenlet
 gunicorn
 idna

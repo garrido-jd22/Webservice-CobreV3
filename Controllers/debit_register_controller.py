@@ -1,5 +1,6 @@
 from datetime import datetime
 import uuid
+import threading
 
 from flask import jsonify
 from Database.database import Session
@@ -12,6 +13,8 @@ from Models.cobre_balance import (
     CobreBalance as CobreBalanceModel,
 )
 from Models.cobre_balance import CobreAvailableServices as CobreAviableServicesModel
+from Models.counter_party import CounterParty as CounterPartyModel
+from Models.data_load import DataLoad as DataLoadModel
 
 
 # Configuración del logging
@@ -90,10 +93,17 @@ class DebitRegister:
             logger.error(f"Error retrieving direct debit registrations: {e}")
             return jsonify({"error": f"Error retrieving data: {str(e)}"}), 500
 
-    def set_direct_debit_registrations(self, counterparty_id, data):
-
+    def get_debit_register_status(self, data_csv):
         try:
+            # Consulta los registros con estado PENDING
 
+            return True
+        except Exception as e:
+            logger.error(f"Error setting direct debit registrations: {e}")
+            return jsonify({"error": f"Error: {str(e)}"}), 500
+
+    def set_direct_debit_registrations(self, counterparty_id, data):
+        try:
             debit_register = DirectDebitRegistrationModel(
                 id=generator_id("ddr_00"),
                 destination_id=data["destination_id"],  # Id Cobre Balance
@@ -109,14 +119,64 @@ class DebitRegister:
                 created_at=datetime.now(),
                 updated_at=datetime.now(),
             )
-
             self.session.add(debit_register)
             self.session.commit()
-
             logger.debug(
-                f"Setting direct debit registrations for counterparty {counterparty_id} with data: {data}"
+                f"Registro de los debitos insertados coccrectamente  {counterparty_id} with data: {data}"
             )
-            return jsonify({"message": "datos ingresados en la tabla correctamente."})
+
+            logger.debug("activando temporizador...")
+            # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
+
+            # 30 SEGUNDOS ##
+
+            timer = threading.Timer(30, self.get_debit_register_status)
+            timer.daemon = True
+            timer.start()
+            print("temporizador activado")
+
+            return jsonify({"message": "datos ingresados en la tabla correctamente.\n"})
+        except Exception as e:
+            logger.error(f"Error setting direct debit registrations: {e}")
+            return jsonify({"error": f"Error: {str(e)}"}), 500
+
+    def set_list_debit_registration(self, data_list):
+        try:
+            debit_register = []
+            for ddr in data_list:
+                debit_register.append(
+                    DirectDebitRegistrationModel(
+                        id=generator_id("ddr_00"),
+                        destination_id=ddr["destination_id"],  # Id Cobre Balance
+                        registration_description=ddr["registration_description"],
+                        fk_counterparty=ddr["id_counterparty"],  # Id del counterparty
+                        # Estos campos miden el estado del registro en la BD local
+                        state_local=ddr["state_local"],
+                        # Estos campos miden el estado del registro
+                        state=ddr["state"],
+                        code=ddr["code"],
+                        description=ddr["description"],
+                        # Campos de fecha
+                        created_at=datetime.now(),
+                        updated_at=datetime.now(),
+                    )
+                )
+            self.session.add_all(debit_register)
+            self.session.commit()
+            logger.debug(
+                f"Registro de los debitos insertados correctamente with data: {data_list}"
+            )
+
+            # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
+            # 30 SEGUNDOS ##
+            # logger.debug("activando temporizador...")
+
+            # timer = threading.Timer(30, self.get_debit_register_status)
+            # timer.daemon = True
+            # timer.start()
+            # print("temporizador activado")
+
+            return jsonify({"message": "datos ingresados en la tabla correctamente.\n"})
         except Exception as e:
             logger.error(f"Error setting direct debit registrations: {e}")
             return jsonify({"error": f"Error: {str(e)}"}), 500

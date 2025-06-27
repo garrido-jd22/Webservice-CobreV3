@@ -12,6 +12,8 @@ from Controllers.debit_register_controller import (
     DebitRegister as DebitRegisterController,
 )
 
+# from Controllers.money_movements_controller import MoneyMovementsController
+
 
 class ManagementFileController:
 
@@ -62,11 +64,11 @@ class ManagementFileController:
             )
 
             # Itera sobre los CounterParties obtenidos y registra los débitos directos
+            list_data_debit = []
             for cp in cp_data_load[0].get_json():
-                DebitRegisterController.set_direct_debit_registrations(
-                    self,
-                    cp["id"],
+                list_data_debit.append(
                     {
+                        "id_counterparty": cp["id"],
                         "destination_id": "acc_0011223344",
                         "registration_description": "Subscripción Ejemplo",
                         # BD local
@@ -76,16 +78,31 @@ class ManagementFileController:
                         "description": "PENDING",
                     },
                 )
+            DebitRegisterController.set_list_debit_registration(self, list_data_debit)
+            debit_result = DebitRegisterController().get_debit_register_status(
+                self, data_csv
+            )
 
             # Money Movement
-            # Primero consultar todos los Debitos Directos por el ID de carga de datos y por el estado RD000 o Registered.
+            # Primero consultar de debit register todos los Debitos Directos por el ID de carga de datos y por el estado RD000 o Registered.
+            # print("payload obtenido por estado y por id del  debit register", Results)
             # Guardar los movimientos de dinero en la base de datos.
+            # money_movement_controller = MoneyMovementsController()
+            # Se asume que el estado es el mismo para todos los registros, se toma del primer elemento si existe
+            # estado = Results[0]["esatdoFinalRegisterDebit"] if Results else None
+            # money_movements_payload = money_movement_controller.set_money_movement(
+            #     Results, estado
+            # )
+            # print(
+            #     "payload generado por money_movement_controller:",
+            #     money_movements_payload,
+            # )
 
             return (
                 jsonify(
                     {
                         "message": "Archivo procesado exitosamente",
-                        "data": cp_data_load[0].get_json()
+                        "data": cp_data_load[0].get_json(),
                     }
                 ),
                 200,
