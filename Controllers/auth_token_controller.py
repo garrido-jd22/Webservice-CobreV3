@@ -8,11 +8,12 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Endpoint de Cobre para obtener los clientes
-COBRE_AUTH_URL = "https://api.qa.cobre.co/v1/auth"  # AUTH TOKEN
-COBRE_API_URL = "https://api.qa.cobre.co/v1/"  # API Cobre
+COBRE_AUTH_URL = "https://api.cobre.co/v1/auth"  # AUTH TOKEN
+COBRE_API_URL = "https://api.cobre.co/v1/"  # API Cobre
 
 # Endpoints de acceso
-ENDPOINTS_COBRE = {"user_id": "cli_ooi706_tvaszw1njw", "secret": "wHHpz0;*gw4hvc"}
+ENDPOINTS_COBRE_QA = {"user_id": "cli_ooi706_tvaszw1njw", "secret": "wHHpz0;*gw4hvc"}
+ENDPOINTS_COBRE_PDN = {"user_id": "cli_ooi706_001", "secret": "ZaN4b5UT9EVSae"}
 
 # Configuración del caché
 cache = Cache()
@@ -56,7 +57,9 @@ class Token:
             logger.info("Obteniendo nuevo token de la API externa...")
             urltoken = f"{COBRE_API_URL}/auth"
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            requestbody = ENDPOINTS_COBRE
+            requestbody = (
+                ENDPOINTS_COBRE_PDN  # Usamos ENDPOINTS_COBRE_PDN para autenticación
+            )
 
             try:
                 response = requests.post(urltoken, json=requestbody, headers=headers)

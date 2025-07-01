@@ -20,8 +20,6 @@ from Models.counter_party import CounterParty as CounterPartyModel
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-SOURCE_ID = "acc_1232145215"
-
 
 class DebitRegister:
 
@@ -38,7 +36,7 @@ class DebitRegister:
                 self.session.query(DirectDebitRegistrationModel, CobreBalanceModel)
                 .join(
                     CobreBalanceModel,
-                    CobreBalanceModel.id == DirectDebitRegistrationModel.destination_id,
+                    CobreBalanceModel.id == DirectDebitRegistrationModel.source_id,
                 )
                 .all()
             )
@@ -52,9 +50,7 @@ class DebitRegister:
                 # Obtener los servicios disponibles para el balance de Cobre
                 cobre_aviable_service = (
                     self.session.query(CobreAviableServicesModel)
-                    .filter(
-                        CobreAviableServicesModel.fk_cobre_balance == ddr.destination_id
-                    )
+                    .filter(CobreAviableServicesModel.fk_cobre_balance == ddr.source_id)
                     .all()
                 )
                 list_aviable_service = []
@@ -98,9 +94,9 @@ class DebitRegister:
         try:
             debit_register = DirectDebitRegistrationModel(
                 id=generator_id("ddr_00"),
-                destination_id=data["destination_id"],  # Id Cobre Balance
+                destination_id=counterparty_id,  # Id Cobre Balance
                 registration_description=data["registration_description"],
-                fk_counterparty=counterparty_id,  # Id del counterparty
+                source_id=data["source_id"],  # Id del cobrebalance
                 # Estos campos miden el estado del registro en la BD local
                 state_local=data["state_local"],
                 # Estos campos miden el estado del registro
@@ -139,9 +135,9 @@ class DebitRegister:
                 debit_register.append(
                     DirectDebitRegistrationModel(
                         id=generator_id("ddr_00"),
-                        destination_id=ddr["destination_id"],  # Id Cobre Balance
+                        destination_id=ddr["destination_id"],  # Id del counterparty
                         registration_description=ddr["registration_description"],
-                        fk_counterparty=ddr["id_counterparty"],  # Id del counterparty
+                        source_id=ddr["source_id"],  # Id del cobrebalance
                         # Estos campos miden el estado del registro en la BD local
                         state_local=ddr["state_local"],
                         # Estos campos miden el estado del registro
@@ -171,7 +167,7 @@ class DebitRegister:
                 .join(
                     CounterPartyModel,
                     CounterPartyModel.id
-                    == DirectDebitRegistrationModel.fk_counterparty,
+                    == DirectDebitRegistrationModel.destination_id,  # Cambiado a destination_id
                 )
                 .filter(
                     CounterPartyModel.fk_data_load == id_load,
@@ -202,7 +198,7 @@ class DebitRegister:
                 .join(
                     CounterPartyModel,
                     CounterPartyModel.id
-                    == DirectDebitRegistrationModel.fk_counterparty,
+                    == DirectDebitRegistrationModel.destination_id,  # Cambiado a destination_id
                 )
                 .filter(
                     CounterPartyModel.fk_data_load == id_load,
@@ -215,12 +211,13 @@ class DebitRegister:
             for ddr, cp in debit_register:
                 payload.append(
                     {
-                        "source_id": SOURCE_ID,  # variable global
+                        "source_id": ddr.source_id,
                         "destination_id": ddr.destination_id,  # direct_debit_registration.destination_id <--- AQUI VA EL ID DEL COUNTER PARTY
                         "amount": cp.amount,  # counterparty.amount
+                        # FALTA FECHA DE DEBITO
                         "metadata": {
                             "description": ddr.registration_description,  # direct_debit_registration.registration_description
-                            "reference": ddr.reference_debit,  # counterparty.reference
+                            "reference": cp.reference_debit,  # counterparty.reference
                         },
                         "checker_approval": False,
                     }

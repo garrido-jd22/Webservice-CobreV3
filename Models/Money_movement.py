@@ -1,6 +1,3 @@
-# models/money_movements.py
-
-
 from sqlalchemy import String, DECIMAL, TIMESTAMP, Boolean, ForeignKey, Text
 from sqlalchemy.orm import mapped_column, Mapped, relationship
 from datetime import datetime

@@ -16,6 +16,7 @@ from Controllers.debit_register_controller import (
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+SOURCE_ID = "acc_1232145215"
 
 class ManagementFileController:
 
@@ -38,7 +39,6 @@ class ManagementFileController:
             DataLoadController.set_data_load(self, id_data_load, "PENDING")
 
             counter_parties = []
-            data_money = []
             count = 0
 
             for row in data_csv:
@@ -57,9 +57,10 @@ class ManagementFileController:
                     counterparty_id_number=int(row["account_number"]),
                     counterparty_phone=int(row["counterparty_phone"]),
                     counterparty_email=row["counterparty_email"],
+                    fecha_reg=datetime.now(),
+                    # 
                     reference_debit=row["reference_debit"],
                     amount=int(row["amount"]),
-                    fecha_reg=datetime.now(),
                 )
                 counter_parties.append(counter_party)
 
@@ -81,8 +82,8 @@ class ManagementFileController:
             for cp in cp_data_load[0].get_json():
                 list_data_debit.append(
                     {
-                        "id_counterparty": cp["id"],
-                        "destination_id": "acc_0011223344",
+                        "source_id": SOURCE_ID, # Id del cobrebalance
+                        "destination_id": cp["id"],
                         "registration_description": "Subscripción Ejemplo",
                         # BD local
                         "state_local": "01",
