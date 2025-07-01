@@ -20,6 +20,8 @@ from Models.counter_party import CounterParty as CounterPartyModel
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+SOURCE_ID = "acc_1232145215"
+
 
 class DebitRegister:
 
@@ -209,11 +211,28 @@ class DebitRegister:
                 .all()
             )
 
-            return f"{len(debit_register)} registros encontrados con estado {state}"
-
+            payload = []
+            for ddr, cp in debit_register:
+                payload.append(
+                    {
+                        "source_id": SOURCE_ID,  # variable global
+                        "destination_id": ddr.destination_id,  # direct_debit_registration.destination_id <--- AQUI VA EL ID DEL COUNTER PARTY
+                        "amount": cp.amount,  # counterparty.amount
+                        "metadata": {
+                            "description": ddr.registration_description,  # direct_debit_registration.registration_description
+                            "reference": ddr.reference_debit,  # counterparty.reference
+                        },
+                        "checker_approval": False,
+                    }
+                )
+                print(
+                    "payload del get a la base de datos de directdebit por estado",
+                    payload,
+                )
+                return payload
         except Exception as e:
-            logger.error(f"Error setting direct debit registrations: {e}")
-            return f"Error: {str(e)}"
+            logger.error(f"Error en get_debit_register_status: {e}")
+            return []
 
 
 def generator_id(text):

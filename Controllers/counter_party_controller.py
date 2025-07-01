@@ -1,7 +1,12 @@
 import datetime
+import logging
 from flask import jsonify
 from Database.database import Session
 from Models.counter_party import CounterParty as CounterPartyModel
+
+# Configuración del logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 class CounterParty:
@@ -65,16 +70,14 @@ class CounterParty:
         return jsonify(counter_party), 200
 
     def set_counter_party(self, datos_csv):
-        print(
-            "data recibida dentro de la funcion para insertar en la db = ",
-            datos_csv,
-        )
+
         self.session.add_all(datos_csv)
         self.session.commit()
-        print("datos ingresados en la tabla correctamente")
+        logger.debug("Registro de los debitos insertados correctamente")
         return jsonify({"message": "datos ingresados en la tabla correctamente."})
 
     def get_counter_party_by_id_load(self, id_data_load):
+
         counter_party_by_id_load = (
             self.session.query(CounterPartyModel)
             .filter(CounterPartyModel.fk_data_load == id_data_load)
@@ -91,6 +94,8 @@ class CounterParty:
                     "alias": cp.alias,
                     "metadata": {
                         "account_number": cp.account_number,
+                        "reference_debit": cp.reference_debit,
+                        "amount": cp.amount,
                         "counterparty_fullname": cp.counterparty_fullname,
                         "counterparty_id_type": cp.counterparty_id_type,
                         "counterparty_id_number": cp.counterparty_id_number,

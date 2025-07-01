@@ -57,29 +57,23 @@ class ManagementFileController:
                     counterparty_id_number=int(row["account_number"]),
                     counterparty_phone=int(row["counterparty_phone"]),
                     counterparty_email=row["counterparty_email"],
+                    reference_debit=row["reference_debit"],
+                    amount=int(row["amount"]),
                     fecha_reg=datetime.now(),
                 )
                 counter_parties.append(counter_party)
-
-                data_money.append(
-                    {
-                        "source_id": "acc_0011223344",
-                        "destination_id": id_cpp,
-                        "amount": row["amount"],
-                        "external_id": "ext_id_to_trck_payment",
-                        "metadata": {
-                            "description": "my very first SPEI payment!",
-                            "reference": "1234567",
-                        },
-                        "checker_approval": False,
-                    }
-                )
 
             CounterPartyController.set_counter_party(self, counter_parties)
 
             # Consulta los CounterParties por el ID de carga de datos
             cp_data_load = CounterPartyController.get_counter_party_by_id_load(
                 self, id_data_load
+            )
+
+            print(
+                "datos Retornados por el metodo get a la bse de datos por id de carga = \n",
+                cp_data_load[0].get_json(),
+                "\n",
             )
 
             # Itera sobre los CounterParties obtenidos y registra los débitos directos

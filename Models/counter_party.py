@@ -15,6 +15,8 @@ class CounterParty(Base):
     alias: Mapped[str]
     beneficiary_institution: Mapped[str]
     account_number: Mapped[int]
+    reference_debit: Mapped[str]
+    amount: Mapped[int]
     counterparty_fullname: Mapped[str]
     counterparty_id_type: Mapped[str]
     counterparty_id_number: Mapped[int]
