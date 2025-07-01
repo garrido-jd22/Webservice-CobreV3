@@ -28,7 +28,7 @@ class CounterParty:
             for counter in counter_party:
                 counter_party_dict.append(
                     {
-                        "id": counter.id,
+                        # "id": counter.id,
                         "geo": counter.geo,
                         "type": counter.type,
                         "alias": counter.alias,
@@ -39,7 +39,7 @@ class CounterParty:
                             "counterparty_id_number": counter.counterparty_id_number,
                             "counterparty_phone": counter.counterparty_phone,
                             "counterparty_email": counter.counterparty_email,
-                            # "registered_account": counter.registered_account, RELACION FK_COUNTERPARTY_ACCOUNT
+                            "beneficiary_institution": counter.beneficiary_institution,
                         },
                     }
                 )
@@ -65,6 +65,7 @@ class CounterParty:
                 "counterparty_id_number": counter_party_by_id.counterparty_id_number,
                 "counterparty_phone": counter_party_by_id.counterparty_phone,
                 "counterparty_email": counter_party_by_id.counterparty_email,
+                "beneficiary_institution": counter_party_by_id.beneficiary_institution,
             },
         }
         return jsonify(counter_party), 200
@@ -101,6 +102,7 @@ class CounterParty:
                         "counterparty_id_number": cp.counterparty_id_number,
                         "counterparty_phone": cp.counterparty_phone,
                         "counterparty_email": cp.counterparty_email,
+                        "beneficiary_institution": cp.beneficiary_institution,
                     },
                 }
             )

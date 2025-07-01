@@ -29,7 +29,6 @@ def format_time_remaining(seconds):
 def get_token_auth():
 
     try:
-
         token_data = Token().get_token()
         seconds_remaining = int(token_data["expiration_time"] - time.time())
 

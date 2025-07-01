@@ -1,6 +1,5 @@
 from flask import jsonify
 from Database.database import Session
-import threading
 import logging
 import uuid
 from datetime import datetime
@@ -11,6 +10,8 @@ from Controllers.data_load_controller import DataLoad as DataLoadController
 from Controllers.debit_register_controller import (
     DebitRegister as DebitRegisterController,
 )
+# Cobre V3
+from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -18,10 +19,13 @@ logger = logging.getLogger(__name__)
 
 SOURCE_ID = "acc_1232145215"
 
+
 class ManagementFileController:
 
     def __init__(self):
         self.session = Session()
+        self.cobre_v3 = CobreV3Controller()
+        self.counterparty = CounterPartyController()
         self.debit_register = DebitRegisterController()
 
     def __del__(self):
@@ -54,61 +58,60 @@ class ManagementFileController:
                     account_number=int(row["account_number"]),
                     counterparty_fullname=row["counterparty_fullname"],
                     counterparty_id_type=row["counterparty_id_type"],
-                    counterparty_id_number=int(row["account_number"]),
-                    counterparty_phone=int(row["counterparty_phone"]),
+                    counterparty_id_number=int(row["counterparty_id_number"]),
+                    counterparty_phone=row["counterparty_phone"],
                     counterparty_email=row["counterparty_email"],
                     fecha_reg=datetime.now(),
-                    # 
+                    #
                     reference_debit=row["reference_debit"],
                     amount=int(row["amount"]),
                 )
                 counter_parties.append(counter_party)
 
-            CounterPartyController.set_counter_party(self, counter_parties)
+            self.counterparty.set_counter_party(counter_parties)
 
             # Consulta los CounterParties por el ID de carga de datos
-            cp_data_load = CounterPartyController.get_counter_party_by_id_load(
-                self, id_data_load
-            )
+            cp_data_load = self.counterparty.get_counter_party_by_id_load(id_data_load)
 
             print(
                 "datos Retornados por el metodo get a la bse de datos por id de carga = \n",
                 cp_data_load[0].get_json(),
                 "\n",
             )
+            
+            # Guardar los datos de los CounterParties en COBRE V3
+            self.cobre_v3.set_cobre_v3_counterparty(cp_data_load[0].get_json())
 
-            # Itera sobre los CounterParties obtenidos y registra los débitos directos
-            list_data_debit = []
-            for cp in cp_data_load[0].get_json():
-                list_data_debit.append(
-                    {
-                        "source_id": SOURCE_ID, # Id del cobrebalance
-                        "destination_id": cp["id"],
-                        "registration_description": "Subscripción Ejemplo",
-                        # BD local
-                        "state_local": "01",
-                        "state": "PENDING",
-                        "code": "PENDING",
-                        "description": "PENDING",
-                    },
-                )
+            # # Itera sobre los CounterParties obtenidos y registra los débitos directos
+            # list_data_debit = []
+            # for cp in cp_data_load[0].get_json():
+            #     list_data_debit.append(
+            #         {
+            #             "source_id": SOURCE_ID,  # Id del cobrebalance
+            #             "destination_id": cp["id"],
+            #             "registration_description": "Subscripción Ejemplo",
+            #             # BD local
+            #             "state_local": "01",
+            #             "state": "PENDING",
+            #             "code": "PENDING",
+            #             "description": "PENDING",
+            #         },
+            #     )
 
-            # Registra los débitos directos en la base de datos en estado PENDING
-            DebitRegisterController.set_list_debit_registration(
-                self.debit_register, list_data_debit
-            )
+            # # Registra los débitos directos en la base de datos en estado PENDING
+            # self.debit_register.set_list_debit_registration(list_data_debit)
 
-            # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
-            # 10 SEGUNDOS #
-            logger.debug("activando temporizador...")
+            # # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
+            # # 86.400 SEGUNDOS #
+            # logger.debug("activando temporizador...")
 
-            timer = threading.Timer(
-                10,
-                self.filter_money_movements,
-                args=(id_data_load,),
-            )  # con coma final para que sea una tupla de un solo elemento
-            timer.daemon = True
-            timer.start()
+            # timer = threading.Timer(
+            #     10,
+            #     self.filter_money_movements,
+            #     args=(id_data_load,),
+            # )  # con coma final para que sea una tupla de un solo elemento
+            # timer.daemon = True
+            # timer.start()
 
             return (
                 jsonify(
@@ -131,14 +134,10 @@ class ManagementFileController:
     def filter_money_movements(self, id_data_load):
         try:
             # Actualizar el estado de los registros de débito directo
-            DebitRegisterController.update_debit_register_status(
-                self.debit_register, id_data_load
-            )
+            self.debit_register.update_debit_register_status(id_data_load)
 
             # Obtener los registros de débito directo actualizados en formato MONEY MOVEMENT
-            DebitRegisterController.get_debit_register_status(
-                self.debit_register, id_data_load, "Registered"
-            )
+            self.debit_register.get_debit_register_status(id_data_load, "Registered")
 
             # Aquí podrías llamar a la función para registrar los movimientos de dinero
             logger.debug(

@@ -1,11 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import request, jsonify
 from functools import wraps
+from Controllers.auth_token_controller import Token as CobreToken
 
-# Token válido (en la vida real, esto vendría de un login u otro sistema)
-TOKEN_VALIDO = "mi-token-secreto"
 
 # Decorador para proteger rutas
-def requiere_autenticacion(f):
+def requieres_authentication(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth_header = request.headers.get("Authorization")
@@ -14,14 +13,16 @@ def requiere_autenticacion(f):
             return jsonify({"error": "Token faltante o mal formado"}), 401
 
         token = auth_header.split(" ")[1]
-        if token != TOKEN_VALIDO:
+
+        # Obtener el token válido desde CobreToken
+        try:
+            response = CobreToken.get_token()
+            token_valido = response.get("token")
+        except Exception as e:
+            return jsonify({"error": f"Error interno al validar el token: {e}"}), 500
+
+        if token != token_valido:
             return jsonify({"error": "Token inválido"}), 403
 
         return f(*args, **kwargs)
     return decorated
-
-# Ruta protegida
-# @app.route("/api/datos", methods=["GET"])
-# @requiere_autenticacion
-# def obtener_datos():
-#     return jsonify({"mensaje": "Datos accedidos correctamente con token"}), 200

@@ -20,7 +20,7 @@ class CounterParty(Base):
     counterparty_fullname: Mapped[str]
     counterparty_id_type: Mapped[str]
     counterparty_id_number: Mapped[int]
-    counterparty_phone: Mapped[int]
+    counterparty_phone: Mapped[str]
     counterparty_email: Mapped[str]
     fecha_reg: Mapped[datetime] = mapped_column(default=datetime.now())
 
@@ -32,6 +32,8 @@ class CounterParty(Base):
             "alias": self.alias,
             "beneficiary_institution": self.beneficiary_institution,
             "account_number": self.account_number,
+            "amount": self.amount,
+            "reference_debit": self.reference_debit,
             "counterparty_fullname": self.counterparty_fullname,
             "counterparty_id_type": self.counterparty_id_type,
             "counterparty_id_number": self.counterparty_id_number,

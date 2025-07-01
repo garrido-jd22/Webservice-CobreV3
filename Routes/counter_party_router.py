@@ -69,6 +69,7 @@ def process_csv_file():
                     "beneficiary_institution",
                     "counterparty_fullname",
                     "counterparty_id_type",
+                    "counterparty_phone",
                 ]:
                     if not valor:
                         errores.append(
@@ -77,7 +78,6 @@ def process_csv_file():
                 elif columna in [
                     "account_number",
                     "counterparty_id_number",
-                    "counterparty_phone",
                 ]:
                     if not valor.isdigit():
                         errores.append(
