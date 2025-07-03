@@ -135,9 +135,11 @@ class DebitRegister:
                 debit_register.append(
                     DirectDebitRegistrationModel(
                         id=generator_id("ddr_00"),
-                        destination_id=ddr["destination_id"],  # Id del counterparty
+                        destination_id=ddr["destination_id"],  # Id del Cobre balance
                         registration_description=ddr["registration_description"],
-                        source_id=ddr["source_id"],  # Id del cobrebalance
+                        fk_id_counterparty=ddr[
+                            "fk_id_counterparty"
+                        ],  # Id del counterparty
                         # Estos campos miden el estado del registro en la BD local
                         state_local=ddr["state_local"],
                         # Estos campos miden el estado del registro
@@ -167,7 +169,7 @@ class DebitRegister:
                 .join(
                     CounterPartyModel,
                     CounterPartyModel.id
-                    == DirectDebitRegistrationModel.destination_id,  # Cambiado a destination_id
+                    == DirectDebitRegistrationModel.fk_id_counterparty,
                 )
                 .filter(
                     CounterPartyModel.fk_data_load == id_load,
@@ -198,7 +200,7 @@ class DebitRegister:
                 .join(
                     CounterPartyModel,
                     CounterPartyModel.id
-                    == DirectDebitRegistrationModel.destination_id,  # Cambiado a destination_id
+                    == DirectDebitRegistrationModel.fk_id_counterparty,
                 )
                 .filter(
                     CounterPartyModel.fk_data_load == id_load,
@@ -211,8 +213,8 @@ class DebitRegister:
             for ddr, cp in debit_register:
                 payload.append(
                     {
-                        "source_id": ddr.source_id,
-                        "destination_id": ddr.destination_id,  # direct_debit_registration.destination_id <--- AQUI VA EL ID DEL COUNTER PARTY
+                        "source_id": ddr.destination_id,
+                        "destination_id": ddr.fk_id_counterparty,  # direct_debit_registration.destination_id <--- AQUI VA EL ID DEL COUNTER PARTY
                         "amount": cp.amount,  # counterparty.amount
                         # FALTA FECHA DE DEBITO
                         "metadata": {

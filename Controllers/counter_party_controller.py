@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 from flask import jsonify
 from Database.database import Session
@@ -13,10 +13,6 @@ class CounterParty:
     # Constructor de la clase
     def __init__(self):
         self.session = Session()
-
-    # Destructor de la clase
-    def __del__(self):
-        self.session.close()
 
     # Get all counter parties
     def get_all_counter_party(self):
@@ -70,13 +66,67 @@ class CounterParty:
         }
         return jsonify(counter_party), 200
 
-    def set_counter_party(self, datos_csv):
+    def set_counter_party(self, counter_parties_saved, id_data_load):
 
-        self.session.add_all(datos_csv)
+        counter_parties = []
+
+        for row in counter_parties_saved:
+            counter_parties.append(
+                CounterPartyModel(
+                    id=row["id"],
+                    fk_data_load=id_data_load,
+                    geo=row["geo"],
+                    type=row["type"],
+                    alias=row["alias"],
+                    beneficiary_institution=row["beneficiary_institution"],
+                    account_number=int(row["account_number"]),
+                    counterparty_fullname=row["counterparty_fullname"],
+                    counterparty_id_type=row["counterparty_id_type"],
+                    counterparty_id_number=int(row["counterparty_id_number"]),
+                    counterparty_phone=row["counterparty_phone"],
+                    counterparty_email=row["counterparty_email"],
+                    fecha_reg=datetime.now(),
+                    #
+                    reference_debit=row["reference_debit"],
+                    amount=int(row["amount"]),
+                )
+            )
+
+        self.session.add_all(counter_parties)
         self.session.commit()
         logger.debug("Registro de los debitos insertados correctamente")
         return jsonify({"message": "datos ingresados en la tabla correctamente."})
 
+    def set_counter_party_cobre_body(self, counter_parties_saved, id_data_load):
+        counter_parties = []
+
+        for row in counter_parties_saved:
+            counter_parties.append(
+                CounterPartyModel(
+                    id=row["id"],
+                    fk_data_load=id_data_load,
+                    geo=row["geo"],
+                    type=row["type"],
+                    alias=row["alias"],
+                    beneficiary_institution=row["metadata"]["beneficiary_institution"],
+                    account_number=int(row["metadata"]["account_number"]),
+                    counterparty_fullname=row["metadata"]["counterparty_fullname"],
+                    counterparty_id_type=row["metadata"]["counterparty_id_type"],
+                    counterparty_id_number=int(row["metadata"]["counterparty_id_number"]),
+                    counterparty_phone=row["metadata"]["counterparty_phone"],
+                    counterparty_email=row["metadata"]["counterparty_email"],
+                    fecha_reg=datetime.now(),
+                    #
+                    reference_debit=row["metadata"]["reference_debit"],
+                    amount=int(row["metadata"]["amount"]),
+                )
+            )
+
+        self.session.add_all(counter_parties)
+        self.session.commit()
+        logger.debug("Registro de los debitos insertados correctamente")
+        return jsonify({"message": "datos ingresados en la tabla correctamente."})
+    
     def get_counter_party_by_id_load(self, id_data_load):
 
         counter_party_by_id_load = (

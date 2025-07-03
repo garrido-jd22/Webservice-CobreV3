@@ -92,7 +92,10 @@ def process_csv_file():
         if errores:
             return jsonify({"errores": errores}), 400
 
+        # LOCAL WEB SERVICE
         data_saved = ManagementFileController().read_file_csv(data_csv)
+        # COBRE V3
+        # data_saved = ManagementFileController().read_file_csv_cobre_v3(data_csv)
 
         return data_saved
 

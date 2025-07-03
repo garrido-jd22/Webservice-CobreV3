@@ -8,7 +8,7 @@ from datetime import datetime
 class CounterParty(Base):
     __tablename__ = "counterparty"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[str] = mapped_column(primary_key=True)
     fk_data_load: Mapped[str] = mapped_column(String(20), ForeignKey("data_load.id"))
     geo: Mapped[str]
     type: Mapped[str]

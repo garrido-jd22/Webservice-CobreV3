@@ -8,10 +8,10 @@ class DirectDebitRegistration(Base):
     __tablename__ = "direct_debit_registration"
 
     id: Mapped[str] = mapped_column(String(50), primary_key=True)
-    source_id: Mapped[str] = mapped_column(
+    destination_id: Mapped[str] = mapped_column(
         String(50), ForeignKey("cobre_balance.id")
     )
-    destination_id: Mapped[str] = mapped_column(
+    fk_id_counterparty: Mapped[str] = mapped_column(
         String(50), ForeignKey("counterparty.id")
     )
     registration_description: Mapped[str] = mapped_column(String(255))
@@ -25,8 +25,8 @@ class DirectDebitRegistration(Base):
     def to_dict(self):
         return {
             "id": self.id,
-            "source_id": self.source_id,
             "destination_id": self.destination_id,
+            "fk_id_counterparty": self.fk_id_counterparty,
             "registration_description": self.registration_description,
             "state_local": self.state_local,
             "state": self.state,
