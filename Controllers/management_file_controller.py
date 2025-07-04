@@ -194,16 +194,14 @@ class ManagementFileController:
                 list_data_debit[0].append(
                     {
                         "destination_id": SOURCE_ID,
-                        "registration_description": "Subscripción Ejemplo"
+                        "registration_description": "Subscripción Ejemplo",
                     },
                 )
                 list_data_debit[1].append(cp["id"])
 
             # Registra los débitos directos en la base de datos en estado PENDING
             # Guardar los datos de los DIRECT DEBIT en COBRE V3
-            direct_debit_saved = self.cobre_v3.send_all_direct_debit(
-                list_data_debit
-            )
+            direct_debit_saved = self.cobre_v3.send_all_direct_debit(list_data_debit)
 
             return (
                 jsonify(
@@ -229,17 +227,32 @@ class ManagementFileController:
             self.debit_register.update_debit_register_status(id_data_load)
 
             # Obtener los registros de débito directo actualizados en formato MONEY MOVEMENT
-            self.debit_register.get_debit_register_status(id_data_load, "Registered")
+            data_payload_Register = self.debit_register.get_debit_register_status(
+                id_data_load, "Registered"
+            )
 
-            # Aquí podrías llamar a la función para registrar los movimientos de dinero
+            print(
+                "registros de débito directo actualizados en formato MONEY MOVEMENT: \n",
+                data_payload_Register,
+            )
+
+            # Llamar a la rutina de movimientos de dinero
+            self.routine_money_movements(data_payload_Register)
+
             logger.debug(
                 "Creando movimientos de dinero a partir de los registros de débito directo..."
             )
 
-            return "Registros actualizados"
+            return data_payload_Register
         except Exception as e:
             logger.error(f"Error setting direct debit registrations: {e}")
             return f"Error: {str(e)}"
+
+    def routine_money_movements(self, data_payload_Register):
+        from Controllers.money_movements_controller import MoneyMovementsController
+
+        money_movement_controller = MoneyMovementsController()
+        money_movement_controller.routine_money_movements(data_payload_Register)
 
 
 def generator_id(test, index):
