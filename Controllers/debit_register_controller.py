@@ -216,7 +216,7 @@ class DebitRegister:
                         "source_id": ddr.destination_id,
                         "destination_id": ddr.fk_id_counterparty,  # direct_debit_registration.destination_id <--- AQUI VA EL ID DEL COUNTER PARTY
                         "amount": cp.amount,  # counterparty.amount
-                        # FALTA FECHA DE DEBITO
+                        "date_debit": cp.date_debit,  # counterparty.date_debit
                         "metadata": {
                             "description": ddr.registration_description,  # direct_debit_registration.registration_description
                             "reference": cp.reference_debit,  # counterparty.reference

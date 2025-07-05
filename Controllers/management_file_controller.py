@@ -1,6 +1,7 @@
 import threading
 from flask import jsonify
 from Database.database import Session
+from Controllers.money_movements_controller import MoneyMovementsController
 import logging
 import uuid
 from datetime import datetime
@@ -30,6 +31,7 @@ class ManagementFileController:
         self.counterparty = CounterPartyController()
         self.debit_register = DebitRegisterController()
         self.data_load = DataLoadController()
+        self.money_movement = MoneyMovementsController()
 
     def __del__(self):
         self.session.close()
@@ -66,6 +68,7 @@ class ManagementFileController:
                         "counterparty_phone": row["counterparty_phone"],
                         "counterparty_email": row["counterparty_email"],
                         "fecha_reg": datetime.now(),
+                        "date_debit":row["date_debit"],
                         "reference_debit": row["reference_debit"],
                         "amount": int(row["amount"]),
                     }
@@ -237,7 +240,7 @@ class ManagementFileController:
             )
 
             # Llamar a la rutina de movimientos de dinero
-            self.routine_money_movements(data_payload_Register)
+            self.money_movement.routine_money_movements(data_payload_Register)
 
             logger.debug(
                 "Creando movimientos de dinero a partir de los registros de débito directo..."
@@ -249,10 +252,8 @@ class ManagementFileController:
             return f"Error: {str(e)}"
 
     def routine_money_movements(self, data_payload_Register):
-        from Controllers.money_movements_controller import MoneyMovementsController
 
-        money_movement_controller = MoneyMovementsController()
-        money_movement_controller.routine_money_movements(data_payload_Register)
+        self.money_movement.routine_money_movements(data_payload_Register)
 
 
 def generator_id(test, index):

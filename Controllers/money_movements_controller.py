@@ -60,37 +60,41 @@ class MoneyMovementsController:
             return {"error": str(e)}
 
     def routine_money_movements(self, payload_list):
+        
         try:
-            money_movement_to_save = (
-                []
-            )  # Lista para guardar los movimientos a persistir
+            money_movement_to_save = ([])  # Lista para guardar los movimientos a persistir
+            
             for item in payload_list:
-                # Validar que el status sea 'registered'
-                status = item.get("status")
-                if status != "registered":
-                    raise Exception(
-                        f"El status del registro no es 'registered': {status}"
-                    )
-                fecha_debit = item.get("fecha_debit")
+                # # Validar que el status sea 'registered'
+                # status = item.get("status")
+                # # Si no se encuentra el status, lanzar una excepción
+                # if status != "registered":
+                #     raise Exception(
+                #         f"El status del registro no es 'registered': {status}"
+                #     )
+                
+                fecha_debit = item.get("date_debit")
                 if not fecha_debit:
                     raise Exception(
                         "No se encontró la llave 'fecha_debit' en el payload"
                     )
                 # Convertir la fecha_debit a objeto datetime
                 fecha_debit_dt = datetime.strptime(fecha_debit, "%Y-%m-%d")
+                
                 # Programar la ejecución del movimiento de dinero usando APScheduler
                 self.scheduler.add_job(
                     self.ejecutar_movimiento,
-                    "date",
-                    run_date=fecha_debit_dt,
+                    "date", # Ejecutar en una fecha específica
+                    run_date=fecha_debit_dt,# Fecha y hora de ejecución
                     args=[item],
                     id=f"movimiento_{item.get('reference_debit', '')}_{fecha_debit}",
-                    replace_existing=True,
+                    replace_existing=True,#
                 )
+                
                 logger.debug(
                     f"Tarea programada para {item.get('reference_debit', '')} el {fecha_debit_dt}"
                 )
-                # Agregar el movimiento a la lista para guardar, con el nuevo estatus
+                # Agregar el movimiento a la lista para guardar en la db, con el nuevo estatus
                 movimiento = item.copy()
                 movimiento["estatus_money_movement"] = "initiated"
                 money_movement_to_save.append(movimiento)
@@ -100,6 +104,8 @@ class MoneyMovementsController:
             logger.error(f"Error en routine_money_movements: {e}")
             raise
 
+
+    #Money movement
     def ejecutar_movimiento(self, payload):
         # Aquí va la lógica que se ejecutará en la fecha programada
         logger.info(f"Ejecutando movimiento de dinero para: {payload}")
