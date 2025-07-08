@@ -1,8 +1,10 @@
 from datetime import datetime
 import uuid
+
+from flask import jsonify
 from Database.database import Session
 import logging
-from Models.money_movement import MoneyMovement
+from Models.Money_movement  import DirectDebitMovement
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 
@@ -29,7 +31,7 @@ class MoneyMovementsController:
             count = 0
             for row in data:
                 count += 1
-                money_movement = MoneyMovement(
+                money_movement = DirectDebitMovement(
                     id=generator_id(count),
                     batch_id=row.get("batch_id", extra_string),
                     external_id=row.get("external_id", ""),
@@ -88,7 +90,7 @@ class MoneyMovementsController:
                     run_date=fecha_debit_dt,# Fecha y hora de ejecución
                     args=[item],
                     id=f"movimiento_{item.get('reference_debit', '')}_{fecha_debit}",
-                    replace_existing=True,#
+                    replace_existing=True,
                 )
                 
                 logger.debug(
@@ -114,15 +116,31 @@ class MoneyMovementsController:
     def save_money_movements(self, movimientos):
         # Método para guardar los movimientos en la base de datos
         try:
-            # Aquí deberías transformar cada dict en una instancia de tu modelo MoneyMovement
-            # y guardarlos en la base de datos. Ejemplo:
-            # list_money_movements = [MoneyMovement(**mov) for mov in movimientos]
-            # self.session.add_all(list_money_movements)
-            # self.session.commit()
-            logger.info(f"Movimientos guardados en la base de datos: {movimientos}")
+            movimientos_db = []
+            count = 0
+            for mov in movimientos:
+                count += 1
+                movimiento_db = DirectDebitMovement(
+                    id=generator_id(count),
+                    source_id=mov["source_id"],
+                    destination_id=mov["destination_id"],
+                    amount=mov["amount"],
+                    date_debit=mov["date_debit"],
+                    metadata_description=mov["metadata_description"],
+                    metadata_reference=mov["metadata_reference"],
+                    checker_approval=mov["checker_approval"],
+                    created_at=datetime.now(),
+                )
+                movimientos_db.append(movimiento_db)
+            self.session.add_all(movimientos_db)
+            self.session.commit()
+            logger.info(f"Movimientos guardados en la base de datos: {[m.to_dict() for m in movimientos_db]}")
+            logger.debug("Registro de los movimientos insertados correctamente")
+            return jsonify({"message": "money movements ingresados en la tabla correctamente."})
         except Exception as e:
+            self.session.rollback()
             logger.error(f"Error guardando movimientos: {e}")
-            raise
+            return {"error": str(e)}
 
 
 def generator_id(index):
