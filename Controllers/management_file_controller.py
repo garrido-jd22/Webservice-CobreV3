@@ -45,7 +45,7 @@ class ManagementFileController:
             id_data_load = generator_id("load_00", 1)
 
             # Registrar la carga de datos en la base de datos
-            self.data_load.set_data_load(self, id_data_load, "PENDING")
+            self.data_load.set_data_load(id_data_load, "PENDING")
 
             counter_parties = []
             count = 0
@@ -97,7 +97,7 @@ class ManagementFileController:
                         "state_local": "01",
                         "state": "PENDING",
                         "code": "PENDING",
-                        "description": "PENDING",
+                        "description": "description random",
                     },
                 )
 
@@ -106,7 +106,7 @@ class ManagementFileController:
 
             # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
             # 86.400 SEGUNDOS #
-            logger.debug("activando temporizador...")
+            logger.debug("#### activando temporizador...#### \n")
 
             timer = threading.Timer(
                 10,
@@ -234,17 +234,11 @@ class ManagementFileController:
                 id_data_load, "Registered"
             )
 
-            print(
-                "registros de débito directo actualizados en formato MONEY MOVEMENT: \n",
-                data_payload_Register,
-            )
+            print("------registros de débito directo actualizados para el  MONEY MOVEMENT= \n ",data_payload_Register,"\n")
+            print("+++++ el tipo de dato al obtner los registros con el estado registered es = ++++ \n",type(data_payload_Register))
 
             # Llamar a la rutina de movimientos de dinero
             self.money_movement.routine_money_movements(data_payload_Register)
-
-            logger.debug(
-                "Creando movimientos de dinero a partir de los registros de débito directo..."
-            )
 
             return data_payload_Register
         except Exception as e:

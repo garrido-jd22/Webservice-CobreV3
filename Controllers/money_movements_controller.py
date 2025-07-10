@@ -1,16 +1,26 @@
 from datetime import datetime
 import uuid
-
+from Database.database import Session
+from Models.Money_movement import DirectDebitMovement
+import logging
+from datetime import datetime
 from flask import jsonify
 from Database.database import Session
 import logging
 from Models.Money_movement  import DirectDebitMovement
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from pytz import timezone
 
+session = Session()
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+# Reducir el nivel de logging de apscheduler y tzlocal
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
+logging.getLogger('tzlocal').setLevel(logging.WARNING)
+
+SOURCE_ID = "acc_znB5gf46CU"
 
 
 class MoneyMovementsController:
@@ -18,133 +28,146 @@ class MoneyMovementsController:
         self.session = Session()
         # Configuración del JobStore para persistencia en SQLite
         jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite")}
-        # Instancia del scheduler con persistencia
-        self.scheduler = BackgroundScheduler(jobstores=jobstores)
+        # Instancia del scheduler con persistencia y zona horaria específica
+        self.scheduler = BackgroundScheduler(jobstores=jobstores, timezone=timezone('America/bogota'))
         self.scheduler.start()
 
     def __del__(self):
         self.session.close()
 
-    def set_money_movement(self, data, extra_string):
-        try:
-            list_money_movements = []
-            count = 0
-            for row in data:
-                count += 1
-                money_movement = DirectDebitMovement(
-                    id=generator_id(count),
-                    batch_id=row.get("batch_id", extra_string),
-                    external_id=row.get("external_id", ""),
-                    typee=row.get("type", "spei"),
-                    geo=row.get("geo", ""),
-                    source_id=row.get("source_id", ""),
-                    destination_id=row.get("destination_id", ""),
-                    currency=row.get("currency", "mxn"),
-                    amount=row.get("amount", 0.0),
-                    created_at=datetime.now(),
-                    updated_at=datetime.now(),
-                    checker_approval=row.get("checker_approval", False),
-                )
-                list_money_movements.append(money_movement)
+    # def set_money_movement(self, data, extra_string):
+    #     try:
+    #         list_money_movements = []
+    #         count = 0
+    #         for row in data:
+    #             count += 1
+    #             money_movement = DirectDebitMovement(
+    #                 id=generator_id(count),
+    #                 batch_id=row.get("batch_id", extra_string),
+    #                 external_id=row.get("external_id", ""),
+    #                 typee=row.get("type", "spei"),
+    #                 geo=row.get("geo", ""),
+    #                 source_id=row.get("source_id", ""),
+    #                 destination_id=row.get("destination_id", ""),
+    #                 currency=row.get("currency", "mxn"),
+    #                 amount=row.get("amount", 0.0),
+    #                 created_at=datetime.now(),
+    #                 updated_at=datetime.now(),
+    #                 checker_approval=row.get("checker_approval", False),
+    #             )
+    #             list_money_movements.append(money_movement)
 
-            logger.debug(
-                f"Setting money movements with data: {data} y extra_string: {extra_string}"
-            )
-            # Aquí podrías guardar en la base de datos si es necesario
-            # self.session.add_all(list_money_movements)
-            # self.session.commit()
+    #         logger.debug(
+    #             f"Setting money movements with data: {data} y extra_string: {extra_string}"
+    #         )
+    #         # Aquí podrías guardar en la base de datos si es necesario
+    #         # self.session.add_all(list_money_movements)
+    #         # self.session.commit()
 
-            # Construir el payload de respuesta
-            payload = [mm.to_dict() for mm in list_money_movements]
-            return payload
-        except Exception as e:
-            logger.error(f"Error setting money movements: {e}")
-            return {"error": str(e)}
+    #         # Construir el payload de respuesta
+    #         payload = [mm.to_dict() for mm in list_money_movements]
+    #         return payload
+    #     except Exception as e:
+    #         logger.error(f"Error setting money movements: {e}")
+    #         return {"error": str(e)}
+
 
     def routine_money_movements(self, payload_list):
         
-        try:
-            money_movement_to_save = ([])  # Lista para guardar los movimientos a persistir
+        print("++++++ Iniciando rutina de movimientos de dinero ++++++ \n")
+        print("### validación de payload_list \n")
+        for item in payload_list:
+            #recorrer payload_list
+            print(f"Procesando el item: {item} y el id counterparty {item.get("destination_id")}  \n")
+        
+        for item in payload_list:
             
-            for item in payload_list:
-                # # Validar que el status sea 'registered'
-                # status = item.get("status")
-                # # Si no se encuentra el status, lanzar una excepción
-                # if status != "registered":
-                #     raise Exception(
-                #         f"El status del registro no es 'registered': {status}"
-                #     )
+            fecha_debit = item.get("date_debit")
+            
+            print(f"Procesando el formato de la fecha inicial dentro de la interacion = {fecha_debit} \n")
+            
+            if not fecha_debit:
+                raise Exception("No se encontró la llave 'date_debit' en el payload")
+            # Si la fecha viene como string con formato completo, puedes modificar la hora aquí
+            if isinstance(fecha_debit, str):
+                # Cambia aquí la hora que quieras probar
+                hora_prueba = "16:19:00"  # <-- Cambiar esto para pruebas
                 
-                fecha_debit = item.get("date_debit")
-                if not fecha_debit:
-                    raise Exception(
-                        "No se encontró la llave 'fecha_debit' en el payload"
-                    )
-                # Convertir la fecha_debit a objeto datetime
-                fecha_debit_dt = datetime.strptime(fecha_debit, "%Y-%m-%d")
-                
-                # Programar la ejecución del movimiento de dinero usando APScheduler
-                self.scheduler.add_job(
-                    self.ejecutar_movimiento,
-                    "date", # Ejecutar en una fecha específica
-                    run_date=fecha_debit_dt,# Fecha y hora de ejecución
-                    args=[item],
-                    id=f"movimiento_{item.get('reference_debit', '')}_{fecha_debit}",
-                    replace_existing=True,
-                )
-                
-                logger.debug(
-                    f"Tarea programada para {item.get('reference_debit', '')} el {fecha_debit_dt}"
-                )
-                # Agregar el movimiento a la lista para guardar en la db, con el nuevo estatus
-                movimiento = item.copy()
-                movimiento["estatus_money_movement"] = "initiated"
-                money_movement_to_save.append(movimiento)
-            # Guardar los movimientos en la base de datos usando un nuevo método
-            self.save_money_movements(money_movement_to_save)
-        except Exception as e:
-            logger.error(f"Error en routine_money_movements: {e}")
-            raise
+                # Si el string ya tiene formato 'YYYY-MM-DD HH:MM:SS'
+                if len(fecha_debit) == 19:
+                    fecha_debit = fecha_debit[:11] + hora_prueba
+                try:
+                    fecha_debit_dt = datetime.strptime(fecha_debit, "%Y-%m-%d %H:%M:%S")
+                except ValueError:
+                    raise Exception("El campo date_debit no tiene un formato válido (YYYY-MM-DD HH:MM:SS)")
+            elif isinstance(fecha_debit, datetime):
+                # Si ya es datetime, puedes reemplazar la hora usando replace()
+                fecha_debit_dt = fecha_debit.replace(hour=15, minute=00, second=0)  # <-- Cambia aquí la hora
+            else:
+                raise Exception("El campo date_debit no es un string ni un datetime válido")
+
+            print(f"Formato de la Fecha final que usará en el apscheduler = {fecha_debit_dt} \n")
+            
 
 
-    #Money movement
-    def ejecutar_movimiento(self, payload):
-        # Aquí va la lógica que se ejecutará en la fecha programada
-        logger.info(f"Ejecutando movimiento de dinero para: {payload}")
-        # Aquí podrías actualizar el estatus en la base de datos, enviar notificaciones, etc.
-
-    def save_money_movements(self, movimientos):
-        # Método para guardar los movimientos en la base de datos
+            # Programar la ejecución del movimiento de dinero usando APScheduler
+            self.scheduler.add_job(
+                self.__class__.ejecutar_movimiento_job,  # método estático serializable
+                "date", # Ejecutar en una fecha específica
+                run_date=fecha_debit_dt, # Fecha y hora de ejecución
+                args=[item],
+                id=f"movimiento_id_client_{item.get('destination_id')}_{fecha_debit_dt}",
+                replace_existing=True,
+            )
+            logger.debug(
+                f"Tarea programada para {item.get("destination_id")} el {fecha_debit_dt} \n"
+            )
+    
+    
+    @staticmethod
+    def ejecutar_movimiento_job(payload):
+        """
+        Método estático para ejecutar el movimiento de dinero, serializable por APScheduler.
+        Crea una nueva sesión SQLAlchemy en cada ejecución.
+        """
+        session_local = Session()
         try:
-            movimientos_db = []
+            money_movement = []
             count = 0
-            for mov in movimientos:
-                count += 1
-                movimiento_db = DirectDebitMovement(
-                    id=generator_id(count),
-                    source_id=mov["source_id"],
-                    destination_id=mov["destination_id"],
-                    amount=mov["amount"],
-                    date_debit=mov["date_debit"],
-                    metadata_description=mov["metadata_description"],
-                    metadata_reference=mov["metadata_reference"],
-                    checker_approval=mov["checker_approval"],
-                    created_at=datetime.now(),
-                )
-                movimientos_db.append(movimiento_db)
-            self.session.add_all(movimientos_db)
-            self.session.commit()
-            logger.info(f"Movimientos guardados en la base de datos: {[m.to_dict() for m in movimientos_db]}")
-            logger.debug("Registro de los movimientos insertados correctamente")
-            return jsonify({"message": "money movements ingresados en la tabla correctamente."})
+            
+            #for item in payload:
+            logger.info(f"[APScheduler] Ejecutando movimiento de dinero para: {payload} \n")
+                
+            #count += 1
+                
+            money_movement = DirectDebitMovement(
+                id=generator_id("mm_00",count),  # Genera un ID único para el movimiento
+                source_id=SOURCE_ID,
+                destination_id=payload["destination_id"],
+                amount=payload["amount"],
+                date_debit=payload["date_debit"],
+                description=payload["metadata"]["description"],
+                reference_debit=payload["metadata"]["reference"],
+                checker_approval=payload["checker_approval"],
+                hora_fecha_exacta_movimiento =datetime.now(),
+            )
+
+            session_local.add(money_movement)
+            session_local.commit()
+            
+            logger.info(f"[APScheduler] Movimiento programado guardado en la base de datos: {money_movement.to_dict()} \n")
+            
+            print({"message": "movimientos programados ingresados en la tabla correctamente."})
         except Exception as e:
-            self.session.rollback()
-            logger.error(f"Error guardando movimientos: {e}")
-            return {"error": str(e)}
+            session_local.rollback()
+            logger.error(f"[APScheduler] Error al guardar el movimiento: {e} \n")
+            logger.debug(f"Error al guardar el movimiento ={e} \n")
+        finally:
+            session_local.close()
 
 
-def generator_id(index):
-    prefij = f"mm_00{index}"
+def generator_id(test, index):
+    prefij = f"{test}{index}"
     current_day = datetime.now().day
     format_day = f"{current_day:02d}"  # Asegura que el día tenga 2 dígitos
     uid = uuid.uuid4().hex[:4]
