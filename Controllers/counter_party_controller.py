@@ -87,8 +87,8 @@ class CounterParty:
                     counterparty_email=row["counterparty_email"],
                     fecha_reg=datetime.now(),
                     #
-                    reference_debit=row["reference_debit"],
-                    amount=int(row["amount"]),
+                    # reference_debit=row["reference_debit"],
+                    # amount=int(row["amount"]),
                 )
             )
 
@@ -112,13 +112,16 @@ class CounterParty:
                     account_number=int(row["metadata"]["account_number"]),
                     counterparty_fullname=row["metadata"]["counterparty_fullname"],
                     counterparty_id_type=row["metadata"]["counterparty_id_type"],
-                    counterparty_id_number=int(row["metadata"]["counterparty_id_number"]),
+                    counterparty_id_number=int(
+                        row["metadata"]["counterparty_id_number"]
+                    ),
                     counterparty_phone=row["metadata"]["counterparty_phone"],
                     counterparty_email=row["metadata"]["counterparty_email"],
                     fecha_reg=datetime.now(),
                     #
-                    reference_debit=row["metadata"]["reference_debit"],
-                    amount=int(row["metadata"]["amount"]),
+                    # reference_debit=row["metadata"]["reference_debit"],
+                    # amount=int(row["metadata"]["amount"]),
+                    # date_debit=row["metadata"]["date_debit"],
                 )
             )
 
@@ -126,7 +129,7 @@ class CounterParty:
         self.session.commit()
         logger.debug("Registro de los debitos insertados correctamente")
         return jsonify({"message": "datos ingresados en la tabla correctamente."})
-    
+
     def get_counter_party_by_id_load(self, id_data_load):
 
         counter_party_by_id_load = (
@@ -145,8 +148,8 @@ class CounterParty:
                     "alias": cp.alias,
                     "metadata": {
                         "account_number": cp.account_number,
-                        "reference_debit": cp.reference_debit,
-                        "amount": cp.amount,
+                        # "reference_debit": cp.reference_debit,
+                        # "amount": cp.amount,
                         "counterparty_fullname": cp.counterparty_fullname,
                         "counterparty_id_type": cp.counterparty_id_type,
                         "counterparty_id_number": cp.counterparty_id_number,
@@ -158,6 +161,23 @@ class CounterParty:
             )
 
         return jsonify(counter_party), 200
+
+    def get_counter_party_code(
+        self, counterparty_id_number, beneficiary_institution, id_data_load
+    ):
+
+        counter_party_by_id_load = (
+            self.session.query(CounterPartyModel)
+            .filter(
+                CounterPartyModel.counterparty_id_number == counterparty_id_number,
+                CounterPartyModel.beneficiary_institution == beneficiary_institution,
+                CounterPartyModel.fk_data_load == id_data_load
+            )
+            .first()
+        )
+        counter_party_id = counter_party_by_id_load.id
+
+        return counter_party_id
 
     def update_counter_party(self, id_counter_party):
         return id_counter_party

@@ -162,6 +162,47 @@ class DebitRegister:
             logger.error(f"Error setting direct debit registrations: {e}")
             return jsonify({"error": f"Error: {str(e)}"}), 500
 
+    def set_list_debit_registration_cobre_v3(self, data_list):
+        try:
+            debit_register = []
+            for ddr in data_list:
+                debit_register.append(
+                    DirectDebitRegistrationModel(
+                        id=ddr["id"],
+                        destination_id=ddr["destination_id"],  # Id del Cobre balance
+                        registration_description=ddr["registration_description"],
+                        fk_id_counterparty=ddr[
+                            "fk_id_counterparty"
+                        ],  # Id del counterparty
+                        fk_data_load=ddr[
+                            "fk_data_load"
+                        ],  # Id del counterparty
+                        # Estos campos miden el estado del registro en la BD local
+                        state_local=ddr["state_local"],
+                        # Estos campos miden el estado del registro
+                        state=ddr["state"],
+                        code=ddr["code"],
+                        description=ddr["description"],
+                        # Campos de fecha
+                        created_at=datetime.now(),
+                        updated_at=datetime.now(),
+                        # 
+                        reference=ddr["reference"],
+                        amount=ddr["amount"],
+                        date_debit=ddr["date_debit"],
+                    )
+                )
+            self.session.add_all(debit_register)
+            self.session.commit()
+            logger.debug(
+                f"Registro de los debitos insertados correctamente with data: {data_list}"
+            )
+
+            return jsonify({"message": "datos ingresados en la tabla correctamente.\n"})
+        except Exception as e:
+            logger.error(f"Error setting direct debit registrations: {e}")
+            return jsonify({"error": f"Error: {str(e)}"}), 500
+
     def update_debit_register_status(self, id_load):
         try:
             debit_register = (
@@ -173,7 +214,7 @@ class DebitRegister:
                 )
                 .filter(
                     CounterPartyModel.fk_data_load == id_load,
-                    DirectDebitRegistrationModel.state == "PENDING",
+                    DirectDebitRegistrationModel.state == "processing",
                 )
                 .all()
             )
@@ -219,16 +260,16 @@ class DebitRegister:
                         # FALTA FECHA DE DEBITO
                         "metadata": {
                             "description": ddr.registration_description,  # direct_debit_registration.registration_description
-                            "reference": cp.reference_debit,  # counterparty.reference
+                            "reference": cp.reference,  # counterparty.reference
                         },
                         "checker_approval": False,
                     }
                 )
-                print(
-                    "payload del get a la base de datos de directdebit por estado",
-                    payload,
-                )
-                return payload
+            print(
+                "payload del get a la base de datos de directdebit por estado",
+                payload,
+            )
+            return payload
         except Exception as e:
             logger.error(f"Error en get_debit_register_status: {e}")
             return []

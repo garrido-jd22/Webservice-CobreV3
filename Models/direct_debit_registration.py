@@ -14,6 +14,7 @@ class DirectDebitRegistration(Base):
     fk_id_counterparty: Mapped[str] = mapped_column(
         String(50), ForeignKey("counterparty.id")
     )
+    fk_data_load: Mapped[str] = mapped_column(String(20), ForeignKey("data_load.id"))
     registration_description: Mapped[str] = mapped_column(String(255))
     state_local: Mapped[str]
     state: Mapped[str]
@@ -21,12 +22,17 @@ class DirectDebitRegistration(Base):
     description: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now())
+    #
+    reference: Mapped[str]
+    amount: Mapped[int]
+    date_debit: Mapped[datetime]
 
     def to_dict(self):
         return {
             "id": self.id,
             "destination_id": self.destination_id,
             "fk_id_counterparty": self.fk_id_counterparty,
+            "fk_data_load": self.fk_data_load,
             "registration_description": self.registration_description,
             "state_local": self.state_local,
             "state": self.state,
@@ -34,4 +40,7 @@ class DirectDebitRegistration(Base):
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
+            "amount": self.amount,
+            "date_debit": self.date_debit,
+            "reference": self.reference,
         }
