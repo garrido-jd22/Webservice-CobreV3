@@ -102,7 +102,7 @@ class MoneyMovementsController:
                     raise Exception("El campo date_debit no tiene un formato válido (YYYY-MM-DD HH:MM:SS)")
             elif isinstance(fecha_debit, datetime):
                 # Si ya es datetime, puedes reemplazar la hora usando replace()
-                fecha_debit_dt = fecha_debit.replace(hour=15, minute=00, second=0)  # <-- Cambia aquí la hora
+                fecha_debit_dt = fecha_debit.replace(hour=8, minute=41, second=0)  # <-- Cambia aquí la hora
             else:
                 raise Exception("El campo date_debit no es un string ni un datetime válido")
 
