@@ -340,7 +340,7 @@ class CobreV3:
                 try:
                     fecha_debit_dt = datetime.strptime(fecha_debit, "%Y-%m-%d")
                     # Ahora puedes modificar la hora manualmente
-                    fecha_debit_dt = fecha_debit_dt.replace(hour=16, minute=58, second=0)
+                    fecha_debit_dt = fecha_debit_dt.replace(hour=17, minute=9, second=0)
                     
                     logger.debug(f"hora seteada manualmente para la programacion y prueba para el movimiento de dinero = {fecha_debit_dt} \n")
                     
@@ -348,14 +348,12 @@ class CobreV3:
                     raise Exception("El campo date_debit no tiene un formato válido (YYYY-MM-DD)")
             elif isinstance(fecha_debit, datetime):
                 # Si ya es datetime, puedes reemplazar la hora usando replace()
-                fecha_debit_dt = fecha_debit.replace(hour=16, minute=55, second=0)  # <-- Cambia aquí la hora
+                fecha_debit_dt = fecha_debit.replace(hour=17, minute=9, second=0)  # <-- Cambia aquí la hora
             else:
                 raise Exception("El campo date_debit no es un string ni un datetime válido")
 
             print(f"Formato de la Fecha final luego de las validaciones, que usará en el apscheduler = {fecha_debit_dt} \n")
             
-
-
             # Programar la ejecución del movimiento de dinero usando APScheduler
             self.scheduler.add_job(
                 self.__class__.send_money_movements,  # método estático serializable
