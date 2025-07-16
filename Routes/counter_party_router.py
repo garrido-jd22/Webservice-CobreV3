@@ -52,8 +52,6 @@ def process_csv_file():
             "counterparty_id_number",
             "counterparty_phone",
             "counterparty_email",
-            "amount",
-            "date_debit",
         ]
 
         errores = []
@@ -76,7 +74,6 @@ def process_csv_file():
                     "counterparty_fullname",
                     "counterparty_id_type",
                     "counterparty_phone",
-                    "amount",
                 ]:
                     if not valor:
                         errores.append(
@@ -95,11 +92,11 @@ def process_csv_file():
                         errores.append(
                             f"El campo 'counterparty_email' no es un correo válido en la fila {idx}."
                         )
-                elif columna == "date_debit":
-                    if datetime.strptime(valor, "%Y-%m-%d") < datetime.now():
-                        errores.append(
-                            f"El campo 'date_debit' tiene una fecha menor a la fecha actual '{idx}'."
-                        )
+                # elif columna == "date_debit":
+                #     if datetime.strptime(valor, "%Y-%m-%d") < datetime.now():
+                #         errores.append(
+                #             f"El campo 'date_debit' tiene una fecha menor a la fecha actual '{idx}'."
+                #         )
 
         if errores:
             return jsonify({"errores": errores}), 400
