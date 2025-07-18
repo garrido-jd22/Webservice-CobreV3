@@ -86,9 +86,6 @@ class CounterParty:
                     counterparty_phone=row["counterparty_phone"],
                     counterparty_email=row["counterparty_email"],
                     fecha_reg=datetime.now(),
-                    #
-                    # reference_debit=row["reference_debit"],
-                    # amount=int(row["amount"]),
                 )
             )
 
@@ -148,8 +145,6 @@ class CounterParty:
                     "alias": cp.alias,
                     "metadata": {
                         "account_number": cp.account_number,
-                        # "reference_debit": cp.reference_debit,
-                        # "amount": cp.amount,
                         "counterparty_fullname": cp.counterparty_fullname,
                         "counterparty_id_type": cp.counterparty_id_type,
                         "counterparty_id_number": cp.counterparty_id_number,

@@ -1,15 +1,27 @@
+from datetime import datetime
 import logging
-
+import uuid
 from flask import jsonify
 import requests
 import time
 from Controllers.auth_token_controller import Token as CobreToken
+from Controllers.money_movements_controller import MoneyMovementsController
+from Models.Money_movement  import DirectDebitMovement
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
+from pytz import timezone
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from Database.database import Session
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+# Reducir el nivel de logging de apscheduler y tzlocal
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
+logging.getLogger('tzlocal').setLevel(logging.WARNING)
+SOURCE_ID = "acc_znB5gf46CU"
 
 
 class CobreV3:
@@ -21,6 +33,11 @@ class CobreV3:
     def __init__(self):
         self.token = CobreToken()
         self.session = requests.Session()
+        self.money_movement = MoneyMovementsController()
+        jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite")}
+        # Instancia del scheduler con persistencia y zona horaria específica
+        self.scheduler = BackgroundScheduler(jobstores=jobstores, timezone=timezone('America/bogota'))
+        self.scheduler.start()
 
     def get_cobre_v3_balance(self):
         try:

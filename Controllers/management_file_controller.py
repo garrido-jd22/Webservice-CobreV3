@@ -1,6 +1,7 @@
 import threading
 from flask import jsonify
 from Database.database import Session
+from Controllers.money_movements_controller import MoneyMovementsController
 import logging
 import uuid
 from datetime import datetime
@@ -30,6 +31,7 @@ class ManagementFileController:
         self.counterparty = CounterPartyController()
         self.debit_register = DebitRegisterController()
         self.data_load = DataLoadController()
+        self.money_movement = MoneyMovementsController()
 
     def __del__(self):
         self.session.close()
@@ -43,7 +45,7 @@ class ManagementFileController:
             id_data_load = generator_id("load_00", 1)
 
             # Registrar la carga de datos en la base de datos
-            self.data_load.set_data_load(self, id_data_load, "PENDING")
+            self.data_load.set_data_load(id_data_load, "PENDING")
 
             counter_parties = []
             count = 0
@@ -66,6 +68,7 @@ class ManagementFileController:
                         "counterparty_phone": row["counterparty_phone"],
                         "counterparty_email": row["counterparty_email"],
                         "fecha_reg": datetime.now(),
+                        "date_debit":row["date_debit"],
                         "reference_debit": row["reference_debit"],
                         "amount": int(row["amount"]),
                     }
@@ -94,7 +97,7 @@ class ManagementFileController:
                         "state_local": "01",
                         "state": "PENDING",
                         "code": "PENDING",
-                        "description": "PENDING",
+                        "description": "description random",
                     },
                 )
 
@@ -103,7 +106,7 @@ class ManagementFileController:
 
             # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
             # 86.400 SEGUNDOS #
-            logger.debug("activando temporizador...")
+            logger.debug("#### activando temporizador...#### \n")
 
             timer = threading.Timer(
                 10,
@@ -231,17 +234,11 @@ class ManagementFileController:
                 id_data_load, "Registered"
             )
 
-            print(
-                "registros de débito directo actualizados en formato MONEY MOVEMENT: \n",
-                data_payload_Register,
-            )
+            print("------registros de débito directo actualizados para el  MONEY MOVEMENT= \n ",data_payload_Register,"\n")
+            print("+++++ el tipo de dato al obtner los registros con el estado registered es = ++++ \n",type(data_payload_Register))
 
             # Llamar a la rutina de movimientos de dinero
-            self.routine_money_movements(data_payload_Register)
-
-            logger.debug(
-                "Creando movimientos de dinero a partir de los registros de débito directo..."
-            )
+            self.money_movement.routine_money_movements(data_payload_Register)
 
             return data_payload_Register
         except Exception as e:
@@ -249,10 +246,8 @@ class ManagementFileController:
             return f"Error: {str(e)}"
 
     def routine_money_movements(self, data_payload_Register):
-        from Controllers.money_movements_controller import MoneyMovementsController
 
-        money_movement_controller = MoneyMovementsController()
-        money_movement_controller.routine_money_movements(data_payload_Register)
+        self.money_movement.routine_money_movements(data_payload_Register)
 
 
 def generator_id(test, index):
