@@ -15,6 +15,7 @@ from Routes.counter_party_router import counterPartyRoutes
 from Routes.auth_token import authTokenRoutes
 from Routes.cobre_balance_router import cobreBalanceRoutes
 from Routes.debit_register_router import debitRegisterRoutes
+from Routes.money_movement_router import moneyMovementRoutes
 
 app = Flask(__name__)
 load_dotenv()
@@ -34,6 +35,8 @@ app.register_blueprint(cobreBalanceRoutes)
 app.register_blueprint(debitRegisterRoutes)
 # ruta para la autenticacion del token
 app.register_blueprint(authTokenRoutes)
+# ruta para los movimientos de dinero
+app.register_blueprint(moneyMovementRoutes)
 
 if __name__ == "__main__":
     app.run(debug=True)

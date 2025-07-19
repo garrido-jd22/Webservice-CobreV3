@@ -12,6 +12,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.jobstores.sqlalchemy import SQLAlchemyJobStore
 from pytz import timezone
 
+# Cobre V3
+#from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
+
 session = Session()
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -26,6 +29,7 @@ SOURCE_ID = "acc_znB5gf46CU"
 class MoneyMovementsController:
     def __init__(self):
         self.session = Session()
+        #self.cobre_v3 = CobreV3Controller()
         # Configuración del JobStore para persistencia en SQLite
         jobstores = {"default": SQLAlchemyJobStore(url="sqlite:///jobs.sqlite")}
         # Instancia del scheduler con persistencia y zona horaria específica
@@ -34,43 +38,6 @@ class MoneyMovementsController:
 
     def __del__(self):
         self.session.close()
-
-    # def set_money_movement(self, data, extra_string):
-    #     try:
-    #         list_money_movements = []
-    #         count = 0
-    #         for row in data:
-    #             count += 1
-    #             money_movement = DirectDebitMovement(
-    #                 id=generator_id(count),
-    #                 batch_id=row.get("batch_id", extra_string),
-    #                 external_id=row.get("external_id", ""),
-    #                 typee=row.get("type", "spei"),
-    #                 geo=row.get("geo", ""),
-    #                 source_id=row.get("source_id", ""),
-    #                 destination_id=row.get("destination_id", ""),
-    #                 currency=row.get("currency", "mxn"),
-    #                 amount=row.get("amount", 0.0),
-    #                 created_at=datetime.now(),
-    #                 updated_at=datetime.now(),
-    #                 checker_approval=row.get("checker_approval", False),
-    #             )
-    #             list_money_movements.append(money_movement)
-
-    #         logger.debug(
-    #             f"Setting money movements with data: {data} y extra_string: {extra_string}"
-    #         )
-    #         # Aquí podrías guardar en la base de datos si es necesario
-    #         # self.session.add_all(list_money_movements)
-    #         # self.session.commit()
-
-    #         # Construir el payload de respuesta
-    #         payload = [mm.to_dict() for mm in list_money_movements]
-    #         return payload
-    #     except Exception as e:
-    #         logger.error(f"Error setting money movements: {e}")
-    #         return {"error": str(e)}
-
 
     def routine_money_movements(self, payload_list):
         
@@ -102,7 +69,7 @@ class MoneyMovementsController:
                     raise Exception("El campo date_debit no tiene un formato válido (YYYY-MM-DD HH:MM:SS)")
             elif isinstance(fecha_debit, datetime):
                 # Si ya es datetime, puedes reemplazar la hora usando replace()
-                fecha_debit_dt = fecha_debit.replace(hour=15, minute=00, second=0)  # <-- Cambia aquí la hora
+                fecha_debit_dt = fecha_debit.replace(hour=8, minute=41, second=0)  # <-- Cambia aquí la hora
             else:
                 raise Exception("El campo date_debit no es un string ni un datetime válido")
 
@@ -164,7 +131,6 @@ class MoneyMovementsController:
             logger.debug(f"Error al guardar el movimiento ={e} \n")
         finally:
             session_local.close()
-
 
 def generator_id(test, index):
     prefij = f"{test}{index}"
