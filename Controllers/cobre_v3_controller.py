@@ -56,13 +56,59 @@ class CobreV3:
                 "Content-Type": self.CONTENT_TYPE,
             }
 
-            url = f"{self.BASE_URL}/counterparties"
+            url = f"{self.BASE_URL}/counterparties?sensitive_data=true"
             response = requests.get(url, headers=headers)
             response.raise_for_status()
             return response.json()
         except requests.exceptions.RequestException as e:
             logging.error(f"Error al consumir API de Cobre: {e}")
             return jsonify({"error": e}), 500
+
+    def get_cobre_v3_counterparty_by_id_number(self, id_number):
+        try:
+            response_token = self.token.get_token()
+            token = response_token.get("token")
+
+            if not token:
+                return self.MESSAGE_ERROR
+
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": self.CONTENT_TYPE,
+            }
+
+            url = f"{self.BASE_URL}/counterparties?counterparty_id_number={id_number}&sensitive_data=true"
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+
+            counter_party_content = {
+                "counterparty_id_number": id_number,
+                "exist": response.json()["contents"],
+            }
+
+            return counter_party_content
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error al consumir API de Cobre: {e}")
+            return jsonify({"error": e}), 500
+
+    def filter_counter_party_id_number(self, lista_counterparties):
+        result = []
+        with ThreadPoolExecutor(
+            max_workers=100
+        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
+            futures = [
+                executor.submit(
+                    self.get_cobre_v3_counterparty_by_id_number,
+                    cp["counterparty_id_number"],
+                )
+                for cp in lista_counterparties
+            ]
+
+            for future in as_completed(
+                futures
+            ):  # as_completed permite iterar sobre los resultados a medida que se completan
+                result.append(future.result())
+        return result
 
     def delete_cobre_v3_counterparty(self, id_counterparty):
         try:
@@ -116,7 +162,7 @@ class CobreV3:
     def send_all_counterparties(self, lista_counterparties):
         result = []
         with ThreadPoolExecutor(
-            max_workers=10
+            max_workers=100
         ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
             futures = [
                 executor.submit(self.set_cobre_v3_counterparty, cp)
@@ -152,16 +198,20 @@ class CobreV3:
             )  # Espera medio segundo entre cada solicitud para evitar sobrecargar la API
             return response.json()
         except requests.exceptions.HTTPError as e:
-            return jsonify({"error": e}), 500
+            logger.debug("-------------------ERROR-----------------")
+            logger.debug("-------------------ERROR-----------------")
+            logger.debug(response.json())
+            logger.debug("-----------------------------------------")
+            logger.debug("-----------------------------------------")
+            return jsonify({"error": response.json()}), 500
         except requests.exceptions.RequestException as e:
-            logging.error(f"Error al consumir API de Cobre: {e}")
             return jsonify({"error": e}), 500
 
     def send_all_direct_debit(self, list_debit_id_cp):
         ddr_list, id_cp_list = list_debit_id_cp
         result = []
         with ThreadPoolExecutor(
-            max_workers=10
+            max_workers=100
         ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
             futures = [
                 executor.submit(self.set_cobre_v3_direct_debit, ddr, id_cp)

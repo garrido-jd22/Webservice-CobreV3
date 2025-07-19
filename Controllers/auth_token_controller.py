@@ -73,7 +73,7 @@ class Token:
                     )
 
                 # Calculamos el tiempo de expiración
-                token_expiration_time = time.time() + 3600  # 1 hora desde ahora
+                token_expiration_time = time.time() + 1200  # 1 hora desde ahora
                 token = token_data["access_token"]
 
                 # Guardamos el token y su tiempo de expiración en caché
