@@ -1,6 +1,7 @@
 from datetime import datetime
 import uuid
 import threading
+from sqlalchemy import func
 
 from flask import jsonify
 from Database.database import Session
@@ -15,6 +16,8 @@ from Models.cobre_balance import (
 from Models.cobre_balance import CobreAvailableServices as CobreAviableServicesModel
 from Models.counter_party import CounterParty as CounterPartyModel
 
+# Cobre V3
+from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -25,6 +28,7 @@ class DebitRegister:
 
     def __init__(self):
         self.session = Session()
+        self.cobre_v3 = CobreV3Controller()
 
     def __del__(self):
         self.session.close()
@@ -174,9 +178,7 @@ class DebitRegister:
                         fk_id_counterparty=ddr[
                             "fk_id_counterparty"
                         ],  # Id del counterparty
-                        fk_data_load=ddr[
-                            "fk_data_load"
-                        ],  # Id del counterparty
+                        fk_data_load=ddr["fk_data_load"],  # Id del counterparty
                         # Estos campos miden el estado del registro en la BD local
                         state_local=ddr["state_local"],
                         # Estos campos miden el estado del registro
@@ -186,10 +188,6 @@ class DebitRegister:
                         # Campos de fecha
                         created_at=datetime.now(),
                         updated_at=datetime.now(),
-                        # 
-                        reference=ddr["reference"],
-                        amount=ddr["amount"],
-                        date_debit=ddr["date_debit"],
                     )
                 )
             self.session.add_all(debit_register)
@@ -269,6 +267,64 @@ class DebitRegister:
                 "payload del get a la base de datos de directdebit por estado",
                 payload,
             )
+            return payload
+        except Exception as e:
+            logger.error(f"Error en get_debit_register_status: {e}")
+            return []
+
+    def get_debit_register_create_at(self, created_at):
+        try:
+            debit_register = (
+                self.session.query(DirectDebitRegistrationModel, CounterPartyModel)
+                .join(
+                    CounterPartyModel,
+                    CounterPartyModel.id
+                    == DirectDebitRegistrationModel.fk_id_counterparty,
+                )
+                .filter(
+                    func.date(DirectDebitRegistrationModel.created_at) == created_at
+                )
+                .all()
+            )
+
+            payload = []
+            for ddr, cp in debit_register:
+                payload.append(
+                    {
+                        "id": ddr.id,
+                        "destination_id": cp.id,
+                        "counterparty_fullname": cp.counterparty_fullname,
+                        "counterparty_id_number": cp.counterparty_id_number,
+                        "account_number": cp.account_number,
+                        "state": ddr.state,
+                        "description": ddr.description,
+                        "create_at": ddr.created_at,
+                    }
+                )
+            print(
+                "payload del get a la base de datos de directdebit por estado",
+                payload,
+            )
+
+            ddr_cobre_state = self.cobre_v3.filter_direct_debit_by_id(payload)
+
+            for ddr in payload:
+                ddr_cobre = next(
+                    (item for item in ddr_cobre_state if item["id"] == ddr["id"]), None
+                )
+                if ddr_cobre["status"]["state"] != "processing":
+                    ddr["state"] = ddr_cobre["status"]["state"]
+
+                    update_ddr = (
+                        self.session.query(DirectDebitRegistrationModel)
+                        .filter(DirectDebitRegistrationModel.id == ddr["id"])
+                        .first()
+                    )
+                    update_ddr.state_local = "02"
+                    update_ddr.state = ddr_cobre["status"]["state"]
+                    update_ddr.code = ddr_cobre["status"]["code"]
+                    update_ddr.description = ddr_cobre["status"]["description"]
+            self.session.commit()
             return payload
         except Exception as e:
             logger.error(f"Error en get_debit_register_status: {e}")
