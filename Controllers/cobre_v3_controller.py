@@ -248,67 +248,93 @@ class CobreV3:
         return result
 
     @staticmethod
-    def send_money_movements(item):
-        
-        list_items = []
-        
-        list_items.append(item)
-        
-        logger.debug(f"items porvenientes del apscheduler = {list_items} \n")
-        
-        session_local = Session()
-        try:
-            # Guardar en la base de datos
-            logger.info(f"[APScheduler] Ejecutando movimiento de dinero para: {item} \n")
-            count = 0
-            money_movement = DirectDebitMovement(
-                id=generator_id("mm_00", count),
-                source_id=SOURCE_ID,
-                destination_id=item["destination_id"],
-                amount=item["amount"],
-                date_debit=item["date_debit"],
-                description=item["metadata"]["description"],
-                reference_debit=item["metadata"]["reference"],
-                checker_approval=item["checker_approval"],
-                hora_fecha_exacta_movimiento=datetime.now(),
-            )
-            session_local.add(money_movement)
-            session_local.commit()
-            logger.info(f"Movimiento de dinero insertado en la base de datos con id: {money_movement.id}")
+    def send_money_movements(items):
+        # required_fields = {"source_id", "destination_id", "amount", "metadata", "checker_approval"}
+        # required_metadata = {"description", "reference"}
 
-            # Enviar el item a la API de Cobre
-            # Obtener el token usando el controlador
-            # token_controller = CobreToken()
-            # response_token = token_controller.get_token()
-            # token = response_token.get("token")
-            # if not token:
-            #     logger.error("No se pudo obtener el token para enviar el movimiento de dinero a la API de Cobre")
-            #     return {"error": "No se pudo obtener el token de autenticación"}
+        # def validate_item(item):
+        #     if not all(field in item for field in required_fields):
+        #         raise ValueError(f"Faltan campos requeridos en el item: {item}")
+        #     if not isinstance(item["metadata"], dict) or not all(m in item["metadata"] for m in required_metadata):
+        #         raise ValueError(f"Faltan campos requeridos en metadata: {item}")
+        #     return True
+        
+        logger.debug(f"items porvenientes del apscheduler = {items} \n")
 
-            # headers = {
-            #     "Authorization": f"Bearer {token}",
-            #     "Content-Type": "application/json",
-            # }
-            # url = f"https://api.cobre.co/v1/money_movements"  # Ajusta el endpoint si es diferente
-            # try:
-            #     response = requests.post(url, headers=headers, json=item, timeout=10)
-            #     response.raise_for_status()
+        def process_item(item):
+            session_local = Session()
+            try:
                 
+                # Copia el item y elimina date_debit para el request
+                item_request = dict(item)
+                item_request.pop("date_debit", None)
+        
+                #validate_item(item)
+                token_controller = CobreToken()
+                response_token = token_controller.get_token()
+                token = response_token.get("token")
+                if not token:
+                    logger.error("No se pudo obtener el token para enviar el movimiento de dinero a la API de Cobre")
+                    return {"error": "No se pudo obtener el token de autenticación"}
+
+                print(f"item_request para enviar a la api= {item_request} \n")
+                headers = {
+                    "Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
                 
-            #     logger.info(f"Respuesta de la API de Cobre para movimiento de dinero: {response.json()}")
-            #     return {"success": response.json()}
-            # except requests.exceptions.RequestException as e:
-            #     logger.error(f"Error al enviar el movimiento de dinero a la API de Cobre: {e}")
-            #     return {"error": str(e)}
-        except Exception as e:
-            session_local.rollback()
-            logger.error(f"Error al insertar movimiento de dinero: {e}")
-            return {"error": str(e)}
-        finally:
-            session_local.close()
-        
-        
-        
+                url = "https://api.cobre.co/v1/money_movements"
+                response = requests.post(url, headers=headers, json=item_request, timeout=10)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                logger.info(f"Respuesta de la API de Cobre para movimiento de dinero: {response_data} \n")
+
+                # Usar el id retornado por la API
+                api_id = response_data.get("id")
+                if not api_id:
+                    raise ValueError("La respuesta de la API no contiene 'id'")
+
+                money_movement = DirectDebitMovement(
+                    id=api_id,
+                    source_id=item["source_id"],
+                    destination_id=item["destination_id"],
+                    amount=item["amount"],
+                    date_debit=item.get("date_debit"),
+                    description=item["metadata"]["description"],
+                    reference_debit=item["metadata"]["reference"],
+                    checker_approval=item["checker_approval"],
+                    hora_fecha_exacta_movimiento=datetime.now(),
+                )
+                session_local.add(money_movement)
+                session_local.commit()
+                logger.info(f"Movimiento de dinero insertado en la base de datos con id: {money_movement.id}")
+                return {"success": response_data}
+            except requests.exceptions.RequestException as e:
+                #logger.error(f"[HTTP ERROR] Error en la petición a la API de Cobre: {e}")
+                logger.error(f"mensaje de error: {response.json()}")
+                return {"error": f"HTTP error: {str(e)}"}
+            except Exception as db_err:
+                session_local.rollback()
+                logger.error(f"[DB ERROR] Error al insertar movimiento de dinero en la base de datos: {db_err}")
+                return {"error": f"DB error: {str(db_err)}"}
+            finally:
+                session_local.close()
+
+        # Si recibe un solo dict, lo convierte en lista
+        if isinstance(items, dict):
+            items = [items]
+
+        results = []
+        with ThreadPoolExecutor(max_workers=100) as executor:
+            futures = [executor.submit(process_item, item) for item in items]
+            for future in as_completed(futures):
+                results.append(future.result())
+        return results
+    
+    
+    
     @staticmethod
     def random_string(length=6):
         return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
