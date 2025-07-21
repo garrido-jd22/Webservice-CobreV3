@@ -84,10 +84,6 @@ class ManagementFileCobreV3Controller:
                         "registration_description": "Direct",
                         # ---
                         "account_number": cp_csv["account_number"],
-                        # ---
-                        "amount": int(cp_csv["amount"]),
-                        "date_debit": cp_csv["date_debit"],
-                        "reference": cp_csv["reference"],
                     },
                 )
 
@@ -262,10 +258,6 @@ def compare_ddr(direct_debit_saved, new_ddr):
                 "state": ddr_saved["status"]["state"],
                 "code": ddr_saved["status"]["code"],
                 "description": ddr_saved["status"]["description"],
-                #
-                # "reference": ddr_find["reference"],
-                # "amount": int(ddr_find["amount"]),
-                # "date_debit": ddr_find["date_debit"],
             },
         )
     return payload_ddr

@@ -45,3 +45,5 @@ virtualenv
 Werkzeug
 WTForms
 zipp
+pandas
+openpyxl

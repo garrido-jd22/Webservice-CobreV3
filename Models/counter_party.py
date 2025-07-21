@@ -21,7 +21,6 @@ class CounterParty(Base):
     counterparty_phone: Mapped[str]
     counterparty_email: Mapped[str]
     fecha_reg: Mapped[datetime] = mapped_column(default=datetime.now())
-    date_debit: Mapped[datetime] 
 
     def to_dict(self):
         return {
@@ -37,5 +36,4 @@ class CounterParty(Base):
             "counterparty_phone": self.counterparty_phone,
             "counterparty_email": self.counterparty_email,
             "fecha_reg": self.fecha_reg.isoformat() if self.fecha_reg else None,
-            "date_debit": self.date_debit.isoformat() if self.date_debit else None,
         }
