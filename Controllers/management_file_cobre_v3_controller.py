@@ -4,6 +4,8 @@ from Database.database import Session
 import logging
 import uuid
 from datetime import datetime
+import os
+import pandas as pd
 
 from Models.counter_party import CounterParty as CounterPartyModel
 from Controllers.counter_party_controller import CounterParty as CounterPartyController
@@ -149,23 +151,12 @@ class ManagementFileCobreV3Controller:
             # -------- GUARDA LOS DIRECT DEBIT EN COBRE V3 -----------
             direct_debit_saved = self.cobre_v3.send_all_direct_debit(list_data_debit)
 
-            logger.debug("PAYLOAD DDR COBRE V3")
-            logger.debug(direct_debit_saved)
+            logger.debug("PAYLOAD DDR COBRE V3 GUARDADO")
 
             # -------- GUARDA LOS DIRECT DEBIT EN LA BD LOCAL ---------
-            # self.debit_register.set_list_debit_registration_cobre_v3(
-            #     compare_ddr(direct_debit_saved, new_ddr)
-            # )
-
-            # -------- ACTIVA TEMPORIZADOR DE CONSULTA DE DIRECT DEBIT EN 24 HORAS ----------
-            # logger.debug("activando temporizador...")
-            # timer = threading.Timer(
-            #     86400,
-            #     self.filter_money_movements_cobre_v3,
-            #     args=(id_data_load,),
-            # )  # con coma final para que sea una tupla de un solo elemento
-            # timer.daemon = True
-            # timer.start()
+            self.debit_register.set_list_debit_registration_cobre_v3(
+                compare_ddr(direct_debit_saved, new_ddr)
+            )
 
             return (
                 jsonify(
@@ -185,29 +176,42 @@ class ManagementFileCobreV3Controller:
         except Exception as e:
             return jsonify({"error": f"Error procesando el archivo: {str(e)}"}), 500
 
-    def filter_money_movements_cobre_v3(self, id_data_load):
+    def export_file_csv_cobre_v3_ddr(self, created_at):
         try:
-            # Actualizar el estado de los registros de débito directo
-            self.debit_register.update_debit_register_status(id_data_load)
 
-            # Obtener los registros de débito directo actualizados en formato MONEY MOVEMENT
-            data_payload_register = self.debit_register.get_debit_register_status(
-                id_data_load, "Registered"
+            # Consulta todos los DDR cargados en {fecha}
+            ddr_created_at = self.debit_register.get_debit_register_create_at(
+                created_at
             )
+            # Convertir la lista de diccionarios a un DataFrame
+            df = pd.DataFrame(ddr_created_at)
 
-            print(
-                "registros de débito directo actualizados en formato MONEY MOVEMENT: \n",
-                data_payload_register,
+            # Crear nombre de archivo con fecha/hora para evitar sobrescribir
+            filename = f"direct_debit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+
+            # Obtener la ruta absoluta de la carpeta temporal del sistema
+            temp_dir = os.path.join(os.path.expanduser("~"), "temp")
+            os.makedirs(temp_dir, exist_ok=True)
+
+            file_path = os.path.join(temp_dir, filename)
+
+            # Guardar el DataFrame en un archivo Excel
+            df.to_excel(file_path, index=False)
+
+            logger.debug(f"Archivo guardado en: {file_path}")
+            
+            return (
+                jsonify(
+                    {
+                        "message": "Archivo guardado exitosamente en la carpeta Temp/",
+                        "path": file_path,
+                    }
+                ),
+                200,
             )
-
-            logger.debug(
-                "Creando movimientos de dinero a partir de los registros de débito directo..."
-            )
-
-            return data_payload_register
         except Exception as e:
-            logger.error(f"Error setting direct debit registrations: {e}")
-            return f"Error: {str(e)}"
+            print(f"Error al guardar el archivo Excel: {str(e)}")
+            return jsonify({"error": f"Error al guardar el archivo Excel: {str(e)}"}), 500
 
 
 def body_counter_party(data_csv):
@@ -240,8 +244,7 @@ def compare_ddr(direct_debit_saved, new_ddr):
             (
                 ddr_filter
                 for ddr_filter in new_ddr
-                if ddr_filter["account_number"]
-                == ddr_saved["destination"]["account_number"]
+                if ddr_filter["id_cp"] == ddr_saved["id_cp"]
             ),
             None,
         )
@@ -253,23 +256,22 @@ def compare_ddr(direct_debit_saved, new_ddr):
                 "destination_id": SOURCE_ID,
                 "registration_description": ddr_saved["registration_description"],
                 # BD local
-                "fk_id_counterparty": ddr_find["id_cp"],  # Id del counter party
+                "fk_id_counterparty": ddr_saved["id_cp"],  # Id del counter party
                 "fk_data_load": ddr_find["fk_data_load"],  # Id del cargue
                 "state_local": "01",
                 "state": ddr_saved["status"]["state"],
                 "code": ddr_saved["status"]["code"],
                 "description": ddr_saved["status"]["description"],
                 #
-                "reference": ddr_find["reference"],
-                "amount": ddr_find["amount"],
-                "date_debit": ddr_find["date_debit"],
+                # "reference": ddr_find["reference"],
+                # "amount": int(ddr_find["amount"]),
+                # "date_debit": ddr_find["date_debit"],
             },
         )
     return payload_ddr
 
 
 def generator_id(test, index):
-
     prefij = f"{test}{index}"
     current_day = datetime.now().day
     format_day = f"{current_day:02d}"  # Asegura que el día tenga 2 dígitos

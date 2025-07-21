@@ -15,9 +15,6 @@ class CounterParty(Base):
     alias: Mapped[str]
     beneficiary_institution: Mapped[str]
     account_number: Mapped[int]
-    # reference_debit: Mapped[str]
-    # amount: Mapped[int]
-    # date_debit: Mapped[datetime]
     counterparty_fullname: Mapped[str]
     counterparty_id_type: Mapped[str]
     counterparty_id_number: Mapped[int]
@@ -34,9 +31,6 @@ class CounterParty(Base):
             "alias": self.alias,
             "beneficiary_institution": self.beneficiary_institution,
             "account_number": self.account_number,
-            # "amount": self.amount,
-            # "date_debit": self.date_debit,
-            # "reference_debit": self.reference_debit,
             "counterparty_fullname": self.counterparty_fullname,
             "counterparty_id_type": self.counterparty_id_type,
             "counterparty_id_number": self.counterparty_id_number,

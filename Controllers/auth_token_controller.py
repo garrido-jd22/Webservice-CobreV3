@@ -36,10 +36,10 @@ class Token:
             try:
                 token_cached = cache.get("auth_token")
                 token_expiration_time = cache.get("token_expiration")
-                logger.debug(f"Token en caché: \n {token_cached} \n")
-                logger.debug(
-                    f"Tiempo de expiración en caché: \n {token_expiration_time} \n"
-                )
+                # logger.debug(f"Token en caché: \n {token_cached} \n")
+                # logger.debug(
+                #     f"Tiempo de expiración en caché: \n {token_expiration_time} \n"
+                # )
             except Exception as e:
                 logger.error(f"Error al obtener datos del caché: {str(e)}")
                 token_cached = None
@@ -65,7 +65,7 @@ class Token:
                 response = requests.post(urltoken, json=requestbody, headers=headers)
                 response.raise_for_status()
                 token_data = response.json()
-                logger.debug(f"### Respuesta de la API ###: \n {token_data} \n")
+                # logger.debug(f"### Respuesta de la API ###: \n {token_data} \n")
 
                 if not token_data.get("access_token"):
                     raise ValueError(

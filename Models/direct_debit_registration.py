@@ -22,10 +22,6 @@ class DirectDebitRegistration(Base):
     description: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(default=datetime.now())
     updated_at: Mapped[datetime] = mapped_column(default=datetime.now())
-    #
-    reference: Mapped[str]
-    amount: Mapped[int]
-    date_debit: Mapped[datetime]
 
     def to_dict(self):
         return {
@@ -40,7 +36,4 @@ class DirectDebitRegistration(Base):
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
-            "amount": self.amount,
-            "date_debit": self.date_debit,
-            "reference": self.reference,
         }
