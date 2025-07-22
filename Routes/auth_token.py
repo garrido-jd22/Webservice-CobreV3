@@ -1,4 +1,4 @@
-from flask import Blueprint
+from flask import Blueprint, request
 import time
 from datetime import datetime
 
@@ -25,11 +25,11 @@ def format_time_remaining(seconds):
 # -- recomendacion --
 # esta ruta en especifica debe estar creada en un archivo nuevo
 # el archivo debe tener la ruta y el servicio al que estara enlazado para obtener el token
-@authTokenRoutes.route("/get-token-auth", methods=["GET"])
+@authTokenRoutes.route("/get-token-auth", methods=["POST"])
 def get_token_auth():
 
     try:
-        token_data = Token().get_token()
+        token_data = Token().get_token(request.json)
         seconds_remaining = int(token_data["expiration_time"] - time.time())
 
         return {

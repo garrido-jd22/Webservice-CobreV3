@@ -7,8 +7,8 @@ class DirectDebitMovement(Base):
     __tablename__ = "money_movement"
 
     id: Mapped[str] = mapped_column(primary_key=True)
-    source_id: Mapped[str] = mapped_column(String(20), ForeignKey("cobre_balance.id"))
-    destination_id: Mapped[str] = mapped_column(String(50), ForeignKey("counterparty.id"))
+    source_id: Mapped[str] = mapped_column(String(20), ForeignKey("counterparty.id"))
+    destination_id: Mapped[str] = mapped_column(String(50), ForeignKey("cobre_balance.id"))
     amount: Mapped[float] = mapped_column(DECIMAL(18, 2))
     date_debit: Mapped[datetime] = mapped_column(DateTime)
     description: Mapped[str] = mapped_column(Text)

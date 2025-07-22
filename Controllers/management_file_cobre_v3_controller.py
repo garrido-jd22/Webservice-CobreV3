@@ -14,8 +14,12 @@ from Controllers.debit_register_controller import (
 )
 
 # Cobre V3
-from Controllers.cobre_v3_CP_controller import CobreV3CounterParty as CobreV3CounterPartyController
-from Controllers.cobre_v3_DDR_controller import CobreV3DirectDebit as CobreV3DirectDebitController
+from Controllers.cobre_v3_CP_controller import (
+    CobreV3CounterParty as CobreV3CounterPartyController,
+)
+from Controllers.cobre_v3_DDR_controller import (
+    CobreV3DirectDebit as CobreV3DirectDebitController,
+)
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -59,8 +63,8 @@ class ManagementFileCobreV3Controller:
                     (
                         f
                         for f in filter_cp
-                        if int(f["counterparty_id_number"])
-                        == int(cp_csv["counterparty_id_number"])
+                        if f["counterparty_id_number"]
+                        == cp_csv["counterparty_id_number"]
                     ),
                     None,
                 )
@@ -69,8 +73,8 @@ class ManagementFileCobreV3Controller:
                 data_exist_code_bank = [
                     cp_exist
                     for cp_exist in data_exist
-                    if int(cp_exist["metadata"]["beneficiary_institution"])
-                    == int(cp_csv["beneficiary_institution"])
+                    if cp_exist["metadata"]["beneficiary_institution"]
+                    == cp_csv["beneficiary_institution"]
                 ]
 
                 # GENERA SIEMPRE UN DDR SIN IMPORTAR SI EL CP EXISTE O NO EN COBRE
@@ -120,10 +124,10 @@ class ManagementFileCobreV3Controller:
                         (
                             cp_saved
                             for cp_saved in counter_parties_saved
-                            if int(cp_saved["metadata"]["counterparty_id_number"])
-                            == int(ddr["counterparty_id_number"])
-                            and int(cp_saved["metadata"]["beneficiary_institution"])
-                            == int(ddr["beneficiary_institution"])
+                            if cp_saved["metadata"]["counterparty_id_number"]
+                            == ddr["counterparty_id_number"]
+                            and cp_saved["metadata"]["beneficiary_institution"]
+                            == ddr["beneficiary_institution"]
                         ),
                         None,
                     )
@@ -146,7 +150,9 @@ class ManagementFileCobreV3Controller:
                 )  # ESTE ES EL ID DEL COUNTERPARTY
 
             # -------- GUARDA LOS DIRECT DEBIT EN COBRE V3 -----------
-            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(list_data_debit)
+            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(
+                list_data_debit
+            )
 
             logger.debug("PAYLOAD DDR COBRE V3 GUARDADO")
 
@@ -196,7 +202,7 @@ class ManagementFileCobreV3Controller:
             df.to_excel(file_path, index=False)
 
             logger.debug(f"Archivo guardado en: {file_path}")
-            
+
             return (
                 jsonify(
                     {
@@ -208,23 +214,28 @@ class ManagementFileCobreV3Controller:
             )
         except Exception as e:
             print(f"Error al guardar el archivo Excel: {str(e)}")
-            return jsonify({"error": f"Error al guardar el archivo Excel: {str(e)}"}), 500
+            return (
+                jsonify({"error": f"Error al guardar el archivo Excel: {str(e)}"}),
+                500,
+            )
 
 
 def body_counter_party(data_csv):
     counter_parties = []
     for row in data_csv:
+        number = row["counterparty_phone"]
+        number_replace = number.replace("\u202a", "").replace("\u202c", "")
         counter_parties.append(
             {
                 "geo": row["geo"],
                 "type": row["type"],
                 "alias": row["alias"],
                 "metadata": {
-                    "account_number": int(row["account_number"]),
+                    "account_number": row["account_number"],
                     "counterparty_fullname": row["counterparty_fullname"],
                     "counterparty_id_type": row["counterparty_id_type"],
-                    "counterparty_id_number": int(row["counterparty_id_number"]),
-                    "counterparty_phone": row["counterparty_phone"],
+                    "counterparty_id_number": row["counterparty_id_number"],
+                    "counterparty_phone": number_replace,
                     "counterparty_email": row["counterparty_email"],
                     "beneficiary_institution": row["beneficiary_institution"],
                 },

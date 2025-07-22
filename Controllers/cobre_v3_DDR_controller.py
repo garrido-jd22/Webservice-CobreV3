@@ -23,7 +23,7 @@ class CobreV3DirectDebit:
 
     def get_cobre_v3_direct_debit_by_id(self, counterparty_id, ddr):
         try:
-            response_token = self.token.get_token()
+            response_token = self.token.get_token({})
             token = response_token.get("token")
 
             if not token:
@@ -65,7 +65,7 @@ class CobreV3DirectDebit:
 
     def set_cobre_v3_direct_debit(self, item_direct_debit, counterparty_id):
         try:
-            response_token = self.token.get_token()
+            response_token = self.token.get_token({})
             token = response_token.get("token")
 
             if not token:

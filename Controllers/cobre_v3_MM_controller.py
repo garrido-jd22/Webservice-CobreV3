@@ -5,6 +5,7 @@ from flask import jsonify
 import requests
 import random
 import string
+import secrets
 from Controllers.auth_token_controller import Token as CobreToken
 from Controllers.money_movements_controller import MoneyMovementsController
 from Models.Money_movement import DirectDebitMovement
@@ -54,7 +55,7 @@ class CobreV3MoneyMovement:
 
                 # validate_item(item)
                 token_controller = CobreToken()
-                response_token = token_controller.get_token()
+                response_token = token_controller.get_token({})
                 token = response_token.get("token")
                 if not token:
                     logger.error(
@@ -63,10 +64,13 @@ class CobreV3MoneyMovement:
                     return {"error": "No se pudo obtener el token de autenticación"}
 
                 print(f"item_request para enviar a la api= {item_request} \n")
+                idempotency = ''.join(secrets.choice(string.digits) for _ in range(10))
+                print(idempotency)
                 headers = {
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/json",
                     "Accept": "application/json",
+                    "idempotency": idempotency,
                 }
 
                 url = "https://api.cobre.co/v1/money_movements"
@@ -182,13 +186,13 @@ class CobreV3MoneyMovement:
                 )
 
                 print(
-                    f"Generando job_id para destination_id={item.get('destination_id')} en {item.get('fecha_str')} \n"
+                    f"Generando job_id para source_id={item.get('source_id')} en {item.get('fecha_str')} \n"
                 )
 
                 random_part = self.random_string(8)
 
                 job_id = (
-                    f"movimiento_id_client_{item.get('destination_id')}{random_part}"
+                    f"movimiento_id_client_{item.get('source_id')}{random_part}"
                 )
                 print(f"job_id generado = {job_id} \n")
                 print(
@@ -204,20 +208,20 @@ class CobreV3MoneyMovement:
                     )
 
                     logger.debug(
-                        f"Tarea programada para {item.get('destination_id')} el {fecha_debit_dt} con job_id {job_id} \n"
+                        f"Tarea programada para {item.get('source_id')} el {fecha_debit_dt} con job_id {job_id} \n"
                     )
 
                 except Exception as sched_err:
                     logger.warning(
-                        f"Error al programar la tarea para {item.get('destination_id')}: {sched_err} \n"
+                        f"Error al programar la tarea para {item.get('source_id')}: {sched_err} \n"
                     )
             except ValueError as ve:
                 logger.error(
-                    f"Error de formato de fecha para {item.get('destination_id')}: {ve}"
+                    f"Error de formato de fecha para {item.get('source_id')}: {ve}"
                 )
             except Exception as e:
                 logger.error(
-                    f"Error general al procesar el item {item.get('destination_id')}: {e}"
+                    f"Error general al procesar el item {item.get('source_id')}: {e}"
                 )
 
 

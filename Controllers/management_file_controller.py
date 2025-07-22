@@ -14,8 +14,12 @@ from Controllers.debit_register_controller import (
 )
 
 # Cobre V3
-from Controllers.cobre_v3_CP_controller import CobreV3CounterParty as CobreV3CounterPartyController
-from Controllers.cobre_v3_DDR_controller import CobreV3DirectDebit as CobreV3DirectDebitController
+from Controllers.cobre_v3_CP_controller import (
+    CobreV3CounterParty as CobreV3CounterPartyController,
+)
+from Controllers.cobre_v3_DDR_controller import (
+    CobreV3DirectDebit as CobreV3DirectDebitController,
+)
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -62,10 +66,10 @@ class ManagementFileController:
                         "type": row["type"],
                         "alias": row["alias"],
                         "beneficiary_institution": row["beneficiary_institution"],
-                        "account_number": int(row["account_number"]),
+                        "account_number": row["account_number"],
                         "counterparty_fullname": row["counterparty_fullname"],
                         "counterparty_id_type": row["counterparty_id_type"],
-                        "counterparty_id_number": int(row["counterparty_id_number"]),
+                        "counterparty_id_number": row["counterparty_id_number"],
                         "counterparty_phone": row["counterparty_phone"],
                         "counterparty_email": row["counterparty_email"],
                         "fecha_reg": datetime.now(),
@@ -153,12 +157,10 @@ class ManagementFileController:
                         "type": row["type"],
                         "alias": row["alias"],
                         "metadata": {
-                            "account_number": int(row["account_number"]),
+                            "account_number": row["account_number"],
                             "counterparty_fullname": row["counterparty_fullname"],
                             "counterparty_id_type": row["counterparty_id_type"],
-                            "counterparty_id_number": int(
-                                row["counterparty_id_number"]
-                            ),
+                            "counterparty_id_number": row["counterparty_id_number"],
                             "counterparty_phone": row["counterparty_phone"],
                             "counterparty_email": row["counterparty_email"],
                             "beneficiary_institution": row["beneficiary_institution"],
@@ -191,7 +193,9 @@ class ManagementFileController:
 
             # Registra los débitos directos en la base de datos en estado PENDING
             # Guardar los datos de los DIRECT DEBIT en COBRE V3
-            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(list_data_debit)
+            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(
+                list_data_debit
+            )
 
             return (
                 jsonify(
@@ -217,31 +221,31 @@ class ManagementFileController:
             self.debit_register.update_debit_register_status(id_data_load)
 
             # Obtener los registros de débito directo actualizados en formato MONEY MOVEMENT
-            data_payload_register = self.debit_register.get_debit_register_status(
+            data_payload_egister = self.debit_register.get_debit_register_status(
                 id_data_load, "Registered"
             )
 
             print(
                 "registros de débito directo actualizados en formato MONEY MOVEMENT: \n",
-                data_payload_register,
+                data_payload_egister,
             )
 
             # Llamar a la rutina de movimientos de dinero
-            self.routine_money_movements(data_payload_register)
+            self.routine_money_movements(data_payload_egister)
 
             logger.debug(
                 "Creando movimientos de dinero a partir de los registros de débito directo..."
             )
 
-            return data_payload_register
+            return data_payload_egister
         except Exception as e:
             logger.error(f"Error setting direct debit registrations: {e}")
             return f"Error: {str(e)}"
 
-    def routine_money_movements(self, data_payload_register):
+    def routine_money_movements(self, data_payload_egister):
 
         money_movement_controller = MoneyMovementsController()
-        money_movement_controller.routine_money_movements(data_payload_register)
+        money_movement_controller.routine_money_movements(data_payload_egister)
 
 
 def generator_id(test, index):

@@ -14,10 +14,10 @@ class CounterParty(Base):
     type: Mapped[str]
     alias: Mapped[str]
     beneficiary_institution: Mapped[str]
-    account_number: Mapped[int]
+    account_number: Mapped[str] # DEBE SER STR OBLIGATORIO
     counterparty_fullname: Mapped[str]
     counterparty_id_type: Mapped[str]
-    counterparty_id_number: Mapped[int]
+    counterparty_id_number: Mapped[str] # DEBE SER STR OBLIGATORIO
     counterparty_phone: Mapped[str]
     counterparty_email: Mapped[str]
     fecha_reg: Mapped[datetime] = mapped_column(default=datetime.now())

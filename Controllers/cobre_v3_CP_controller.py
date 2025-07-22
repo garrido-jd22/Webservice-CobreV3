@@ -24,7 +24,7 @@ class CobreV3CounterParty:
 
     def get_cobre_v3_counterparty(self):
         try:
-            response_token = self.token.get_token()
+            response_token = self.token.get_token({})
             token = response_token.get("token")
 
             if not token:
@@ -45,7 +45,7 @@ class CobreV3CounterParty:
 
     def get_cobre_v3_counterparty_by_id_number(self, id_number):
         try:
-            response_token = self.token.get_token()
+            response_token = self.token.get_token({})
             token = response_token.get("token")
 
             if not token:
@@ -91,7 +91,7 @@ class CobreV3CounterParty:
 
     def delete_cobre_v3_counterparty(self, id_counterparty):
         try:
-            response_token = self.token.get_token()
+            response_token = self.token.get_token({})
             token = response_token.get("token")
 
             if not token:
@@ -112,7 +112,7 @@ class CobreV3CounterParty:
 
     def set_cobre_v3_counterparty(self, item_counterparty):
         try:
-            response_token = self.token.get_token()
+            response_token = self.token.get_token({})
             token = response_token.get("token")
 
             if not token:
@@ -128,12 +128,9 @@ class CobreV3CounterParty:
                 url, headers=headers, json=item_counterparty, timeout=10
             )
             response.raise_for_status()
-            time.sleep(
-                0.5
-            )  # Espera medio segundo entre cada solicitud para evitar sobrecargar la API
             return response.json()
         except requests.exceptions.HTTPError as e:
-            return jsonify({"error": e}), 500
+            return jsonify({"error": e}), 409
         except requests.exceptions.RequestException as e:
             logging.error(f"Error al consumir API de Cobre: {e}")
             return jsonify({"error": e}), 500

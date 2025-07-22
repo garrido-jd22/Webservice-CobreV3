@@ -12,8 +12,7 @@ COBRE_AUTH_URL = "https://api.cobre.co/v1/auth"  # AUTH TOKEN
 COBRE_API_URL = "https://api.cobre.co/v1/"  # API Cobre
 
 # Endpoints de acceso
-ENDPOINTS_COBRE_QA = {"user_id": "cli_ooi706_tvaszw1njw", "secret": "wHHpz0;*gw4hvc"}
-ENDPOINTS_COBRE_PDN = {"user_id": "cli_ooi706_001", "secret": "ZaN4b5UT9EVSae"}
+# ENDPOINTS_COBRE_QA = {"user_id": "cli_ooi706_tvaszw1njw", "secret": "wHHpz0;*gw4hvc"}
 
 # Configuración del caché
 cache = Cache()
@@ -28,7 +27,7 @@ class Token:
             logger.error(f"Error al inicializar la clase Cobre: {str(e)}")
             raise
 
-    def get_token(self):
+    def get_token(self, requestbody):
         try:
             logger.info("Iniciando obtención de token")
 
@@ -53,9 +52,6 @@ class Token:
             logger.info("Obteniendo nuevo token de la API externa...")
             urltoken = f"{COBRE_API_URL}/auth"
             headers = {"Content-Type": "application/json", "Accept": "application/json"}
-            requestbody = (
-                ENDPOINTS_COBRE_PDN  # Usamos ENDPOINTS_COBRE_PDN para autenticación
-            )
 
             try:
                 response = requests.post(urltoken, json=requestbody, headers=headers)

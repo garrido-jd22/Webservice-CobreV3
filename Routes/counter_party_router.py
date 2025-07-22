@@ -10,6 +10,7 @@ from Controllers.management_file_cobre_v3_controller import (
     ManagementFileCobreV3Controller,
 )
 from Controllers.counter_party_controller import CounterParty
+from Controllers.auth_token_controller import Token
 
 counterPartyRoutes = Blueprint("counter_party", __name__)
 
@@ -92,18 +93,17 @@ def process_csv_file():
                         errores.append(
                             f"El campo 'counterparty_email' no es un correo válido en la fila {idx}."
                         )
-                # elif columna == "date_debit":
-                #     if datetime.strptime(valor, "%Y-%m-%d") < datetime.now():
-                #         errores.append(
-                #             f"El campo 'date_debit' tiene una fecha menor a la fecha actual '{idx}'."
-                #         )
 
         if errores:
             return jsonify({"errores": errores}), 400
 
-        # LOCAL WEB SERVICE
-        # data_saved = ManagementFileController().read_file_csv(data_csv)
-        # COBRE V3
+        # TOKEN COBRE V3
+        requestbody = {
+            "user_id": request.form.get("User-ID"),
+            "secret": request.form.get("Secret"),
+        }
+
+        Token().get_token(requestbody)
         data_saved = ManagementFileCobreV3Controller().read_file_csv_cobre_v3(data_csv)
 
         return data_saved
