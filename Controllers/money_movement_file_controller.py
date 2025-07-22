@@ -4,7 +4,7 @@ from Database.database import Session
 from datetime import datetime
 import uuid
 from Models.Money_movement import DirectDebitMovement
-from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
+from Controllers.cobre_v3_MM_controller import CobreV3MoneyMovement as CobreV3MoneyMovementController
 from Controllers.money_movements_controller import MoneyMovementsController
 
 # Configuración del logging
@@ -16,8 +16,8 @@ SOURCE_ID = "acc_znB5gf46CU"
 class MoneyMovementFileController:
     def __init__(self):
         self.session = Session()
-        self.cobre_v3 = CobreV3Controller()
-        self.Money_movement = MoneyMovementsController()
+        self.cobre_v3_mm = CobreV3MoneyMovementController()
+        self.money_movement = MoneyMovementsController()
 
     def __del__(self):
         self.session.close()
@@ -79,7 +79,7 @@ class MoneyMovementFileController:
             
             logger.debug(f"enviando payload a la rutina de movimientos de dinero:{money_movements}")
             
-            self.cobre_v3.routine_money_movements(money_movements)
+            self.cobre_v3_mm.routine_money_movements(money_movements)
             
 
             return jsonify({

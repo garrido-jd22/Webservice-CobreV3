@@ -115,10 +115,6 @@ class CounterParty:
                     counterparty_phone=row["metadata"]["counterparty_phone"],
                     counterparty_email=row["metadata"]["counterparty_email"],
                     fecha_reg=datetime.now(),
-                    #
-                    # reference_debit=row["metadata"]["reference_debit"],
-                    # amount=int(row["metadata"]["amount"]),
-                    # date_debit=row["metadata"]["date_debit"],
                 )
             )
 
@@ -166,7 +162,7 @@ class CounterParty:
             .filter(
                 CounterPartyModel.counterparty_id_number == counterparty_id_number,
                 CounterPartyModel.beneficiary_institution == beneficiary_institution,
-                CounterPartyModel.fk_data_load == id_data_load
+                CounterPartyModel.fk_data_load == id_data_load,
             )
             .first()
         )

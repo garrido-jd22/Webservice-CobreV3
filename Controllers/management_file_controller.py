@@ -1,10 +1,10 @@
 import threading
 from flask import jsonify
 from Database.database import Session
-from Controllers.money_movements_controller import MoneyMovementsController
 import logging
 import uuid
 from datetime import datetime
+from Controllers.money_movements_controller import MoneyMovementsController
 
 from Models.counter_party import CounterParty as CounterPartyModel
 from Controllers.counter_party_controller import CounterParty as CounterPartyController
@@ -14,7 +14,8 @@ from Controllers.debit_register_controller import (
 )
 
 # Cobre V3
-from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
+from Controllers.cobre_v3_CP_controller import CobreV3CounterParty as CobreV3CounterPartyController
+from Controllers.cobre_v3_DDR_controller import CobreV3DirectDebit as CobreV3DirectDebitController
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -27,11 +28,11 @@ class ManagementFileController:
 
     def __init__(self):
         self.session = Session()
-        self.cobre_v3 = CobreV3Controller()
+        self.cobre_v3_cp = CobreV3CounterPartyController()
+        self.cobre_v3_ddr = CobreV3DirectDebitController()
         self.counterparty = CounterPartyController()
         self.debit_register = DebitRegisterController()
         self.data_load = DataLoadController()
-        self.money_movement = MoneyMovementsController()
 
     def __del__(self):
         self.session.close()
@@ -45,7 +46,7 @@ class ManagementFileController:
             id_data_load = generator_id("load_00", 1)
 
             # Registrar la carga de datos en la base de datos
-            self.data_load.set_data_load(id_data_load, "PENDING")
+            self.data_load.set_data_load(self, id_data_load, "PENDING")
 
             counter_parties = []
             count = 0
@@ -68,7 +69,6 @@ class ManagementFileController:
                         "counterparty_phone": row["counterparty_phone"],
                         "counterparty_email": row["counterparty_email"],
                         "fecha_reg": datetime.now(),
-                        "date_debit":row["date_debit"],
                         "reference_debit": row["reference_debit"],
                         "amount": int(row["amount"]),
                     }
@@ -97,7 +97,7 @@ class ManagementFileController:
                         "state_local": "01",
                         "state": "PENDING",
                         "code": "PENDING",
-                        "description": "description random",
+                        "description": "PENDING",
                     },
                 )
 
@@ -106,7 +106,7 @@ class ManagementFileController:
 
             # Lanzar temporizador de 24 horas para ejecutar get_debit_register_status
             # 86.400 SEGUNDOS #
-            logger.debug("#### activando temporizador...#### \n")
+            logger.debug("activando temporizador...")
 
             timer = threading.Timer(
                 10,
@@ -169,22 +169,9 @@ class ManagementFileController:
             print("Datos Counter Party COBRE V3: \n", counter_parties)
 
             # Guardar los datos de los CounterParties en COBRE V3
-            counter_parties_saved = self.cobre_v3.send_all_counterparties(
+            counter_parties_saved = self.cobre_v3_cp.send_all_counterparties(
                 counter_parties
             )
-
-            # Compara con la lista de Counterparties para guardar el amount y referencia
-            for cp_saved in counter_parties_saved:
-                for cp_new_load in data_csv:
-                    if (
-                        int(cp_new_load["counterparty_id_number"])
-                        == cp_saved["metadata"]["counterparty_id_number"]
-                    ):
-                        cp_saved["metadata"]["reference_debit"] = cp_new_load[
-                            "reference_debit"
-                        ]
-                        cp_saved["metadata"]["amount"] = int(cp_new_load["amount"])
-                        break
 
             # --------- Guardar los datos de los CounterParties en LOCAL WEB SERVICE ----------
             self.counterparty.set_counter_party_cobre_body(
@@ -204,13 +191,13 @@ class ManagementFileController:
 
             # Registra los débitos directos en la base de datos en estado PENDING
             # Guardar los datos de los DIRECT DEBIT en COBRE V3
-            direct_debit_saved = self.cobre_v3.send_all_direct_debit(list_data_debit)
+            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(list_data_debit)
 
             return (
                 jsonify(
                     {
                         "message": "Archivo procesado exitosamente",
-                        "data": counter_parties_saved,
+                        "data": direct_debit_saved,
                     }
                 ),
                 200,
@@ -230,24 +217,31 @@ class ManagementFileController:
             self.debit_register.update_debit_register_status(id_data_load)
 
             # Obtener los registros de débito directo actualizados en formato MONEY MOVEMENT
-            data_payload_Register = self.debit_register.get_debit_register_status(
+            data_payload_register = self.debit_register.get_debit_register_status(
                 id_data_load, "Registered"
             )
 
-            print("------registros de débito directo actualizados para el  MONEY MOVEMENT= \n ",data_payload_Register,"\n")
-            print("+++++ el tipo de dato al obtner los registros con el estado registered es = ++++ \n",type(data_payload_Register))
+            print(
+                "registros de débito directo actualizados en formato MONEY MOVEMENT: \n",
+                data_payload_register,
+            )
 
             # Llamar a la rutina de movimientos de dinero
-            self.money_movement.routine_money_movements(data_payload_Register)
+            self.routine_money_movements(data_payload_register)
 
-            return data_payload_Register
+            logger.debug(
+                "Creando movimientos de dinero a partir de los registros de débito directo..."
+            )
+
+            return data_payload_register
         except Exception as e:
             logger.error(f"Error setting direct debit registrations: {e}")
             return f"Error: {str(e)}"
 
-    def routine_money_movements(self, data_payload_Register):
+    def routine_money_movements(self, data_payload_register):
 
-        self.money_movement.routine_money_movements(data_payload_Register)
+        money_movement_controller = MoneyMovementsController()
+        money_movement_controller.routine_money_movements(data_payload_register)
 
 
 def generator_id(test, index):

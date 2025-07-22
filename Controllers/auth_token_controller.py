@@ -36,10 +36,6 @@ class Token:
             try:
                 token_cached = cache.get("auth_token")
                 token_expiration_time = cache.get("token_expiration")
-                # logger.debug(f"Token en caché: \n {token_cached} \n")
-                # logger.debug(
-                #     f"Tiempo de expiración en caché: \n {token_expiration_time} \n"
-                # )
             except Exception as e:
                 logger.error(f"Error al obtener datos del caché: {str(e)}")
                 token_cached = None

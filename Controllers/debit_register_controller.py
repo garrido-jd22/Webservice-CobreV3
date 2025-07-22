@@ -17,7 +17,7 @@ from Models.cobre_balance import CobreAvailableServices as CobreAviableServicesM
 from Models.counter_party import CounterParty as CounterPartyModel
 
 # Cobre V3
-from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
+from Controllers.cobre_v3_DDR_controller import CobreV3DirectDebit as CobreV3DirectDebitController
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -28,7 +28,7 @@ class DebitRegister:
 
     def __init__(self):
         self.session = Session()
-        self.cobre_v3 = CobreV3Controller()
+        self.cobre_v3_ddr = CobreV3DirectDebitController()
 
     def __del__(self):
         self.session.close()
@@ -306,7 +306,7 @@ class DebitRegister:
                 payload,
             )
 
-            ddr_cobre_state = self.cobre_v3.filter_direct_debit_by_id(payload)
+            ddr_cobre_state = self.cobre_v3_ddr.filter_direct_debit_by_id(payload)
 
             for ddr in payload:
                 ddr_cobre = next(

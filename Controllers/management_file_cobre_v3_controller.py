@@ -1,4 +1,3 @@
-import threading
 from flask import jsonify
 from Database.database import Session
 import logging
@@ -15,7 +14,8 @@ from Controllers.debit_register_controller import (
 )
 
 # Cobre V3
-from Controllers.cobre_v3_controller import CobreV3 as CobreV3Controller
+from Controllers.cobre_v3_CP_controller import CobreV3CounterParty as CobreV3CounterPartyController
+from Controllers.cobre_v3_DDR_controller import CobreV3DirectDebit as CobreV3DirectDebitController
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -28,10 +28,11 @@ class ManagementFileCobreV3Controller:
 
     def __init__(self):
         self.session = Session()
-        self.cobre_v3 = CobreV3Controller()
         self.counterparty = CounterPartyController()
         self.debit_register = DebitRegisterController()
         self.data_load = DataLoadController()
+        self.cobre_v3_cp = CobreV3CounterPartyController()
+        self.cobre_v3_ddr = CobreV3DirectDebitController()
 
     def __del__(self):
         self.session.close()
@@ -47,7 +48,7 @@ class ManagementFileCobreV3Controller:
             self.data_load.set_data_load(id_data_load, "PENDING")
 
             # ----------BUSQUEDA DE COUNTERPARTIES EXISTENTES------------
-            filter_cp = self.cobre_v3.filter_counter_party_id_number(data_csv)
+            filter_cp = self.cobre_v3_cp.filter_counter_party_id_number(data_csv)
 
             cp_data_save = []
             new_ddr = []
@@ -104,7 +105,7 @@ class ManagementFileCobreV3Controller:
 
             if len(cp_data_save) > 0:
                 # -------------- GUARDA COUNTER PARTIES EN COBRE V3 ---------------
-                counter_parties_saved = self.cobre_v3.send_all_counterparties(
+                counter_parties_saved = self.cobre_v3_cp.send_all_counterparties(
                     body_counter_party(cp_data_save)
                 )
 
@@ -145,7 +146,7 @@ class ManagementFileCobreV3Controller:
                 )  # ESTE ES EL ID DEL COUNTERPARTY
 
             # -------- GUARDA LOS DIRECT DEBIT EN COBRE V3 -----------
-            direct_debit_saved = self.cobre_v3.send_all_direct_debit(list_data_debit)
+            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(list_data_debit)
 
             logger.debug("PAYLOAD DDR COBRE V3 GUARDADO")
 
