@@ -72,9 +72,11 @@ class MoneyMovementFileController:
                     "amount": amount,
                     "date_debit": mm_csv["date_debit"],
                     "metadata": {
-                        "description": mm_csv["description"]
+                        "description": mm_csv["description"],
+                        "reference": mm_csv["reference"]
                     },
-                    "external_id": "DebitProduct"
+                    "external_id": "DebitProduct",
+                    "checker_approval": False,
                 }
 
                 money_movements.append(movement)

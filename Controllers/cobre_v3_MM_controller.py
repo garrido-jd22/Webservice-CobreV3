@@ -52,6 +52,8 @@ class CobreV3MoneyMovement:
                 # Copia el item y elimina date_debit para el request
                 item_request = dict(item)
                 item_request.pop("date_debit", None)
+                item_request.pop("checker_approval", None)
+                item_request.get("metadata", {}).pop("reference", None)
 
                 # validate_item(item)
                 token_controller = CobreToken()
@@ -64,7 +66,7 @@ class CobreV3MoneyMovement:
                     return {"error": "No se pudo obtener el token de autenticación"}
 
                 print(f"item_request para enviar a la api= {item_request} \n")
-                idempotency = ''.join(secrets.choice(string.digits) for _ in range(10))
+                idempotency = "".join(secrets.choice(string.digits) for _ in range(10))
                 print(idempotency)
                 headers = {
                     "Authorization": f"Bearer {token}",
@@ -191,9 +193,7 @@ class CobreV3MoneyMovement:
 
                 random_part = self.random_string(8)
 
-                job_id = (
-                    f"movimiento_id_client_{item.get('source_id')}{random_part}"
-                )
+                job_id = f"movimiento_id_client_{item.get('source_id')}{random_part}"
                 print(f"job_id generado = {job_id} \n")
                 print(
                     "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ \n"
