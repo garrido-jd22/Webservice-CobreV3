@@ -45,7 +45,7 @@ class MoneyMovementsController:
         print("### validación de payload_list \n")
         for item in payload_list:
             #recorrer payload_list
-            print(f"Procesando el item: {item} y el id counterparty {item.get("destination_id")}  \n")
+            print(f"Procesando el item: {item} y el id counterparty {item.get('destination_id')}  \n")
         
         for item in payload_list:
             
@@ -87,7 +87,7 @@ class MoneyMovementsController:
                 replace_existing=True,
             )
             logger.debug(
-                f"Tarea programada para {item.get("destination_id")} el {fecha_debit_dt} \n"
+                f"Tarea programada para {item.get('destination_id')} el {fecha_debit_dt} \n"
             )
     
     
