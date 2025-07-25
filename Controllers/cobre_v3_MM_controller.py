@@ -13,7 +13,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Database.database import Session
-
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -22,6 +21,9 @@ logging.getLogger("apscheduler").setLevel(logging.WARNING)
 logging.getLogger("tzlocal").setLevel(logging.WARNING)
 SOURCE_ID = "acc_znB5gf46CU"
 
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 class CobreV3MoneyMovement:
 
@@ -56,8 +58,12 @@ class CobreV3MoneyMovement:
                 item_request.get("metadata", {}).pop("reference", None)
 
                 # validate_item(item)
+                requestbody = {
+                    "user_id": os.environ["USER_ID"],
+                    "secret": os.environ["SECRET"],
+                }
                 token_controller = CobreToken()
-                response_token = token_controller.get_token({})
+                response_token = token_controller.get_token(requestbody)
                 token = response_token.get("token")
                 if not token:
                     logger.error(
@@ -172,16 +178,16 @@ class CobreV3MoneyMovement:
                     )
 
                 now = datetime.now()
-                # Si la fecha es hoy, asignar hora/minuto actual +5 minutos
+                # Si la fecha es hoy, asignar hora/minuto actual +2 minutos
                 if fecha_debit_dt.date() == now.date():
-                    nueva_hora = (now.hour + ((now.minute + 5) // 60)) % 24
+                    nueva_hora = (now.hour + ((now.minute + 2) // 60)) % 24
                     nuevo_minuto = (now.minute + 2) % 60
                     fecha_debit_dt = fecha_debit_dt.replace(
                         hour=nueva_hora, minute=nuevo_minuto, second=0
                     )
                 else:
-                    # Si la fecha no es hoy, asignar 8:00:00
-                    fecha_debit_dt = fecha_debit_dt.replace(hour=8, minute=0, second=0)
+                    # Si la fecha no es hoy, asignar 00:05:00, 12 y 5 minutos del dia siguiente
+                    fecha_debit_dt = fecha_debit_dt.replace(hour=8, minute=5, second=0)
 
                 print(
                     f"Formato de la Fecha final luego de las validaciones, que usará en el apscheduler = {fecha_debit_dt} \n"
