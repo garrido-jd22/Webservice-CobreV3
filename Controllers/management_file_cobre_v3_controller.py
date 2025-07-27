@@ -4,6 +4,8 @@ import logging
 import uuid
 from datetime import datetime
 import os
+import io
+from flask import send_file
 import pandas as pd
 
 from Models.counter_party import CounterParty as CounterPartyModel
@@ -182,42 +184,28 @@ class ManagementFileCobreV3Controller:
     def export_file_csv_cobre_v3_ddr(self, created_at):
         try:
 
-            # Consulta todos los DDR cargados en {fecha}
+            # Consulta todos los DDR cargados en {created_at}
             ddr_created_at = self.debit_register.get_debit_register_create_at(
                 created_at
             )
-            # Convertir la lista de diccionarios a un DataFrame
             df = pd.DataFrame(ddr_created_at)
 
-            # Crear nombre de archivo con fecha/hora para evitar sobrescribir
-            filename = f"direct_debit_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+            # Generar archivo Excel en memoria
+            output = io.BytesIO()
+            df.to_excel(output, index=False)
+            output.seek(0)
 
-            # Obtener la ruta absoluta de la carpeta temporal del sistema
-            temp_dir = os.path.join(os.path.expanduser("~"), "temp")
-            os.makedirs(temp_dir, exist_ok=True)
+            # Nombre dinámico
+            filename = f"direct_debit_{created_at}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
 
-            file_path = os.path.join(temp_dir, filename)
-
-            # Guardar el DataFrame en un archivo Excel
-            df.to_excel(file_path, index=False)
-
-            logger.debug(f"Archivo guardado en: {file_path}")
-
-            return (
-                jsonify(
-                    {
-                        "message": "Archivo guardado exitosamente en la carpeta Temp/",
-                        "path": file_path,
-                    }
-                ),
-                200,
+            return send_file(
+                output,
+                as_attachment=True,
+                download_name=filename,
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
         except Exception as e:
-            print(f"Error al guardar el archivo Excel: {str(e)}")
-            return (
-                jsonify({"error": f"Error al guardar el archivo Excel: {str(e)}"}),
-                500,
-            )
+            return {"error": str(e)}, 500
 
 
 def body_counter_party(data_csv):
