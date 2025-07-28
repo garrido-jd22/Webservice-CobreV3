@@ -54,8 +54,6 @@ class CobreV3MoneyMovement:
                 # Copia el item y elimina date_debit para el request
                 item_request = dict(item)
                 item_request.pop("date_debit", None)
-                item_request.pop("checker_approval", None)
-                item_request.get("metadata", {}).pop("reference", None)
 
                 # validate_item(item)
                 requestbody = {
@@ -98,10 +96,11 @@ class CobreV3MoneyMovement:
                     raise ValueError("La respuesta de la API no contiene 'id'")
 
                 money_movement = DirectDebitMovement(
+                    # id=generator_id("mm_", 1),
                     id=api_id,
                     source_id=item["source_id"],
                     destination_id=item["destination_id"],
-                    amount=item["amount"],
+                    amount=response_data.get("amount"),
                     date_debit=item.get("date_debit"),
                     description=item["metadata"]["description"],
                     reference_debit=item["metadata"]["reference"],
