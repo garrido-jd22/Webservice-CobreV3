@@ -73,7 +73,7 @@ class MoneyMovementFileController:
                     "date_debit": mm_csv["date_debit"],
                     "metadata": {
                         "description": mm_csv["description"],
-                        "reference": mm_csv["reference"]
+                        "reference": mm_csv["reference"],
                     },
                     "external_id": "DebitProduct",
                     "checker_approval": False,

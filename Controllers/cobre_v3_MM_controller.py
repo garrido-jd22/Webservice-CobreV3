@@ -54,6 +54,7 @@ class CobreV3MoneyMovement:
                 # Copia el item y elimina date_debit para el request
                 item_request = dict(item)
                 item_request.pop("date_debit", None)
+                item_request["amount"] = int(item['amount']) * 100  # Convertir a centavos
 
                 # validate_item(item)
                 requestbody = {
@@ -100,7 +101,7 @@ class CobreV3MoneyMovement:
                     id=api_id,
                     source_id=item["source_id"],
                     destination_id=item["destination_id"],
-                    amount=response_data.get("amount"),
+                    amount=item["amount"],
                     date_debit=item.get("date_debit"),
                     description=item["metadata"]["description"],
                     reference_debit=item["metadata"]["reference"],
