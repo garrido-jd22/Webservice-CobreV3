@@ -1,14 +1,25 @@
 import logging
 from flask import jsonify
 import requests
-import time
+from requests.adapters import HTTPAdapter
 from Controllers.auth_token_controller import Token as CobreToken
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Crear un session global reutilizable
+session = requests.Session()
+adapter = HTTPAdapter(pool_connections=300, pool_maxsize=300)
+session.mount("https://", adapter)
+session.mount("http://", adapter)
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 SOURCE_ID = "acc_znB5gf46CU"
+
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 
 class CobreV3DirectDebit:
@@ -19,7 +30,11 @@ class CobreV3DirectDebit:
 
     def __init__(self):
         self.token = CobreToken()
-        self.session = requests.Session()
+        self.session = session
+
+    # Destructor de la clase
+    def __del__(self):
+        self.session.close()
 
     def get_cobre_v3_direct_debit_by_id(self, counterparty_id, ddr):
         try:
@@ -46,7 +61,7 @@ class CobreV3DirectDebit:
     def filter_direct_debit_by_id(self, list_ddr):
         result = []
         with ThreadPoolExecutor(
-            max_workers=100
+            max_workers=len(list_ddr)
         ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
             futures = [
                 executor.submit(
@@ -63,9 +78,13 @@ class CobreV3DirectDebit:
                 result.append(future.result())
         return result
 
-    def set_cobre_v3_direct_debit(self, item_direct_debit, counterparty_id):
+    def set_cobre_v3_direct_debit(self, item_direct_debit):
         try:
-            response_token = self.token.get_token({})
+            requestbody = {
+                "user_id": os.environ["USER_ID"],
+                "secret": os.environ["SECRET"],
+            }
+            response_token = self.token.get_token(requestbody)
             token = response_token.get("token")
 
             if not token:
@@ -76,18 +95,26 @@ class CobreV3DirectDebit:
                 "Content-Type": self.CONTENT_TYPE,
             }
 
-            url = f"{self.BASE_URL}/counterparties/{counterparty_id}/direct_debit_registrations"
+            url = f"{self.BASE_URL}/counterparties/{item_direct_debit['id_cp']}/direct_debit_registrations"
             response = self.session.post(
-                url, headers=headers, json=item_direct_debit, timeout=10
+                url,
+                headers=headers,
+                json={
+                    "destination_id": item_direct_debit["destination_id"],
+                    "registration_description": item_direct_debit[
+                        "registration_description"
+                    ],
+                },
+                timeout=10,
             )
             response.raise_for_status()
-            time.sleep(
-                0.5
-            )  # Espera medio segundo entre cada solicitud para evitar sobrecargar la API
-            return response.json()
+            data_ddr = response.json()
+            data_ddr["id_cp"] = item_direct_debit["id_cp"]
+            return data_ddr
         except requests.exceptions.HTTPError as e:
             logger.debug("-------------------ERROR-----------------")
             logger.debug("-------------------ERROR-----------------")
+            logger.debug(f"Error {e}")
             logger.debug(response.json())
             logger.debug("-----------------------------------------")
             logger.debug("-----------------------------------------")
@@ -95,19 +122,18 @@ class CobreV3DirectDebit:
         except requests.exceptions.RequestException as e:
             return jsonify({"error": e}), 500
 
-    def send_all_direct_debit(self, list_debit_id_cp):
-        ddr_list, id_cp_list = list_debit_id_cp
+    def send_all_direct_debit(self, list_debit):
         result = []
-        with ThreadPoolExecutor(max_workers=100) as executor:
-            future_to_id_cp = {
-                executor.submit(self.set_cobre_v3_direct_debit, ddr, id_cp): id_cp
-                for ddr, id_cp in zip(ddr_list, id_cp_list)
-            }
+        with ThreadPoolExecutor(
+            max_workers=len(list_debit)
+        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
+            futures = [
+                executor.submit(self.set_cobre_v3_direct_debit, ddr)
+                for ddr in list_debit
+            ]
 
-            for future in as_completed(future_to_id_cp):
-                id_cp = future_to_id_cp[future]
-                try:
-                    result.append({"id_cp": id_cp, **future.result()})
-                except Exception as e:
-                    result.append({"id_cp": id_cp, "error": str(e)})
+            for future in as_completed(
+                futures
+            ):  # as_completed permite iterar sobre los resultados a medida que se completan
+                result.append(future.result())
         return result

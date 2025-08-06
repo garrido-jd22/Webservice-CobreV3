@@ -12,6 +12,7 @@ cobreV3Routes = Blueprint("cobre_v3", __name__)
 def get_cobre_v3_balance():
     return CobreV3Controller().get_cobre_v3_balance()
 
+
 @cobreV3Routes.route("/get-cobre-v3-counterparty", methods=["GET"])
 # @requieres_authentication
 def get_cobre_v3_counterparty():
@@ -30,3 +31,9 @@ def set_cobre_v3_counterparty():
 # @requieres_authentication
 def delete_cobre_v3_counterparty(counterparty_id):
     return CobreV3CounterPartyController().delete_cobre_v3_counterparty(counterparty_id)
+
+
+@cobreV3Routes.route("/delete-all/counterparty", methods=["POST"])
+# @requieres_authentication
+def delete_all_counterparties():
+    return CobreV3CounterPartyController().delete_all_counterparties(request.json)

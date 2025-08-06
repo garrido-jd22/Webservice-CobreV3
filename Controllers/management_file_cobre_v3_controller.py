@@ -7,6 +7,7 @@ import os
 import io
 from flask import send_file
 import pandas as pd
+import traceback
 
 from Models.counter_party import CounterParty as CounterPartyModel
 from Controllers.counter_party_controller import CounterParty as CounterPartyController
@@ -58,59 +59,48 @@ class ManagementFileCobreV3Controller:
 
             cp_data_save = []
             new_ddr = []
+            index_count = 0
 
             for cp_csv in data_csv:
-
-                cp_id = next(
-                    (
-                        f
-                        for f in filter_cp
-                        if f["counterparty_id_number"]
-                        == cp_csv["counterparty_id_number"]
-                    ),
-                    None,
-                )
-
-                data_exist = cp_id["exist"]
-                data_exist_code_bank = [
-                    cp_exist
-                    for cp_exist in data_exist
-                    if cp_exist["metadata"]["beneficiary_institution"]
-                    == cp_csv["beneficiary_institution"]
-                ]
 
                 # GENERA SIEMPRE UN DDR SIN IMPORTAR SI EL CP EXISTE O NO EN COBRE
                 new_ddr.append(
                     {
-                        "id_cp": "Pennding",
+                        "id_cp": None,
+                        "fk_data_load": id_data_load,
                         "beneficiary_institution": cp_csv["beneficiary_institution"],
                         "counterparty_id_number": cp_csv["counterparty_id_number"],
-                        "fk_data_load": id_data_load,
+                        "account_number": cp_csv["account_number"],
                         # --DIRECT DEBIT--
                         "destination_id": SOURCE_ID,
                         "registration_description": "Direct",
-                        # ---
-                        "account_number": cp_csv["account_number"],
                     },
                 )
 
-                if len(data_exist) == 0 or (
-                    len(data_exist) > 0 and len(data_exist_code_bank) == 0
-                ):
+                # Busca el CP
+                cp_id = next(
+                    (
+                        f
+                        for f in filter_cp
+                        if f is not None
+                        and f.get("metadata", {}).get("beneficiary_institution")
+                        == cp_csv.get("beneficiary_institution")
+                        and f.get("metadata", {}).get("account_number")
+                        == cp_csv.get("account_number")
+                        and f.get("metadata", {}).get("counterparty_id_number")
+                        == cp_csv.get("counterparty_id_number")
+                    ),
+                    None,
+                )
+
+                if cp_id is not None:
+                    new_ddr[index_count]["id_cp"] = cp_id["id"]
+                else:
                     cp_data_save.append(cp_csv)
+                index_count += 1
 
-                elif len(data_exist_code_bank) > 0:
-                    for ddr in new_ddr:
-                        if (
-                            ddr["beneficiary_institution"]
-                            == cp_csv["beneficiary_institution"]
-                            and ddr["counterparty_id_number"]
-                            == cp_csv["counterparty_id_number"]
-                        ):
-                            ddr["id_cp"] = data_exist_code_bank[0]["id"]
-
+            # -------------- GUARDA COUNTER PARTIES EN COBRE V3 ---------------
             if len(cp_data_save) > 0:
-                # -------------- GUARDA COUNTER PARTIES EN COBRE V3 ---------------
                 counter_parties_saved = self.cobre_v3_cp.send_all_counterparties(
                     body_counter_party(cp_data_save)
                 )
@@ -120,41 +110,26 @@ class ManagementFileCobreV3Controller:
                     counter_parties_saved, id_data_load
                 )
 
-                # ----------- LE ASIGNA CADA ID CP A CADA DRR ----------------
-                for ddr in filter(lambda d: d["id_cp"] == "Pennding", new_ddr):
-                    cp = next(
-                        (
-                            cp_saved
-                            for cp_saved in counter_parties_saved
-                            if cp_saved["metadata"]["counterparty_id_number"]
-                            == ddr["counterparty_id_number"]
-                            and cp_saved["metadata"]["beneficiary_institution"]
-                            == ddr["beneficiary_institution"]
-                        ),
-                        None,
-                    )
-                    ddr["id_cp"] = cp["id"]
-
-            # # --------- ORGANIZA EL PAYLOAD PARA REGISTRAR EL DIRECT DEBIT ----------
-            list_data_debit = [[], []]
-            for ddr in new_ddr:
-                list_data_debit[0].append(
-                    {
-                        "destination_id": SOURCE_ID,
-                        "registration_description": ddr["registration_description"],
-                        "destination": {
-                            "account_number": ddr["account_number"],
-                        },
-                    },
+            # # ----------- LE ASIGNA CADA ID CP A CADA DRR ----------------
+            for ddr in filter(lambda d: d.get("id_cp") is None, new_ddr):
+                cp = next(
+                    (
+                        cp_saved
+                        for cp_saved in counter_parties_saved
+                        if cp_saved.get("metadata", {}).get("counterparty_id_number")
+                        == ddr.get("counterparty_id_number")
+                        and cp_saved.get("metadata", {}).get("beneficiary_institution")
+                        == ddr.get("beneficiary_institution")
+                        and cp_saved.get("metadata", {}).get("account_number")
+                        == ddr.get("account_number")
+                    ),
+                    None,
                 )
-                list_data_debit[1].append(
-                    ddr["id_cp"]
-                )  # ESTE ES EL ID DEL COUNTERPARTY
+                if cp is not None:
+                    ddr["id_cp"] = cp.get("id")
 
             # -------- GUARDA LOS DIRECT DEBIT EN COBRE V3 -----------
-            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(
-                list_data_debit
-            )
+            direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(new_ddr)
 
             logger.debug("PAYLOAD DDR COBRE V3 GUARDADO")
 
@@ -162,12 +137,20 @@ class ManagementFileCobreV3Controller:
             self.debit_register.set_list_debit_registration_cobre_v3(
                 compare_ddr(direct_debit_saved, new_ddr)
             )
+            print("-----------------")
+            print("-----------------")
+            print("-----------------")
+            print("-----------------")
+            print(counter_parties_saved)
+            print("-----------------")
+            print("-----------------")
 
             return (
                 jsonify(
                     {
                         "message": "Archivo procesado exitosamente",
-                        "data": direct_debit_saved,
+                        "CP Creados": counter_parties_saved,
+                        "DDR Creados": new_ddr,
                     }
                 ),
                 200,
@@ -179,7 +162,15 @@ class ManagementFileCobreV3Controller:
                 404,
             )
         except Exception as e:
-            return jsonify({"error": f"Error procesando el archivo: {str(e)}"}), 500
+            return (
+                jsonify(
+                    {
+                        "error": f"Error procesando el archivo: {str(e)}",
+                        "traceback": f"Error {traceback.extract_tb(e.__traceback__)}",
+                    }
+                ),
+                500,
+            )
 
     def export_file_csv_cobre_v3_ddr(self, created_at):
         try:
@@ -202,7 +193,7 @@ class ManagementFileCobreV3Controller:
                 output,
                 as_attachment=True,
                 download_name=filename,
-                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except Exception as e:
             return {"error": str(e)}, 500

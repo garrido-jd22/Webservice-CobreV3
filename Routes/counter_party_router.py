@@ -71,7 +71,6 @@ def process_csv_file():
                     "geo",
                     "type",
                     "alias",
-                    "beneficiary_institution",
                     "counterparty_fullname",
                     "counterparty_id_type",
                     "counterparty_phone",
@@ -83,6 +82,7 @@ def process_csv_file():
                 elif columna in [
                     "account_number",
                     "counterparty_id_number",
+                    "beneficiary_institution",
                 ]:
                     if not valor.isdigit():
                         errores.append(
