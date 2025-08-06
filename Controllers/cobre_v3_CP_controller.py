@@ -88,9 +88,7 @@ class CobreV3CounterParty:
 
     def filter_counter_party_id_number(self, list_counterparty):
         result = []
-        with ThreadPoolExecutor(
-            max_workers=len(list_counterparty)
-        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
+        with ThreadPoolExecutor(max_workers=len(list_counterparty)) as executor:
             futures = [
                 executor.submit(
                     self.get_cobre_v3_counterparty_by_id_number,
@@ -132,9 +130,7 @@ class CobreV3CounterParty:
 
     def delete_all_counterparties(self, list_id_cp):
         result = []
-        with ThreadPoolExecutor(
-            max_workers=len(list_id_cp)
-        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
+        with ThreadPoolExecutor(max_workers=len(list_id_cp)) as executor:
             futures = [
                 executor.submit(self.delete_cobre_v3_counterparty, cp["id"])
                 for cp in list_id_cp
@@ -177,9 +173,7 @@ class CobreV3CounterParty:
 
     def send_all_counterparties(self, list_counterparty):
         result = []
-        with ThreadPoolExecutor(
-            max_workers=len(list_counterparty)
-        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
+        with ThreadPoolExecutor(max_workers=len(list_counterparty)) as executor:
             futures = [
                 executor.submit(self.set_cobre_v3_counterparty, cp)
                 for cp in list_counterparty

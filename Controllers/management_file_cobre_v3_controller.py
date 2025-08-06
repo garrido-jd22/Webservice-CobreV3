@@ -27,7 +27,6 @@ from Controllers.cobre_v3_DDR_controller import (
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-
 SOURCE_ID = "acc_znB5gf46CU"
 
 
@@ -100,6 +99,7 @@ class ManagementFileCobreV3Controller:
                 index_count += 1
 
             # -------------- GUARDA COUNTER PARTIES EN COBRE V3 ---------------
+            counter_parties_saved = []
             if len(cp_data_save) > 0:
                 counter_parties_saved = self.cobre_v3_cp.send_all_counterparties(
                     body_counter_party(cp_data_save)
@@ -110,7 +110,7 @@ class ManagementFileCobreV3Controller:
                     counter_parties_saved, id_data_load
                 )
 
-            # # ----------- LE ASIGNA CADA ID CP A CADA DRR ----------------
+            # # # ----------- LE ASIGNA CADA ID CP A CADA DRR ----------------
             for ddr in filter(lambda d: d.get("id_cp") is None, new_ddr):
                 cp = next(
                     (
@@ -130,20 +130,12 @@ class ManagementFileCobreV3Controller:
 
             # -------- GUARDA LOS DIRECT DEBIT EN COBRE V3 -----------
             direct_debit_saved = self.cobre_v3_ddr.send_all_direct_debit(new_ddr)
-
             logger.debug("PAYLOAD DDR COBRE V3 GUARDADO")
 
             # -------- GUARDA LOS DIRECT DEBIT EN LA BD LOCAL ---------
             self.debit_register.set_list_debit_registration_cobre_v3(
                 compare_ddr(direct_debit_saved, new_ddr)
             )
-            print("-----------------")
-            print("-----------------")
-            print("-----------------")
-            print("-----------------")
-            print(counter_parties_saved)
-            print("-----------------")
-            print("-----------------")
 
             return (
                 jsonify(

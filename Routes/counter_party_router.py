@@ -41,7 +41,7 @@ def process_csv_file():
         lector_csv = csv.DictReader(archivo_stream)
         data_csv = list(lector_csv)
 
-        # Definir columnas esperadas y sus validaciones
+        # Definir columnas esperadas
         columnas_esperadas = [
             "geo",
             "type",
@@ -57,37 +57,63 @@ def process_csv_file():
 
         errores = []
         email_regex = r"^[\w\.-]+@[\w\.-]+\.\w+$"
+        telefono_regex = r"^\+57\d{10}$"  # +57 seguido de 10 dígitos
 
         for idx, fila in enumerate(
             data_csv, start=2
-        ):  # start=2 para considerar encabezado en la línea 1
+        ):  # start=2 por encabezado en línea 1
             for columna in columnas_esperadas:
                 if columna not in fila:
                     errores.append(f"Columna '{columna}' faltante en la fila {idx}.")
                     continue
+
                 valor = fila[columna].strip() if fila[columna] else ""
-                # Validaciones por columna
-                if columna in [
-                    "geo",
-                    "type",
-                    "alias",
-                    "counterparty_fullname",
-                    "counterparty_id_type",
-                    "counterparty_phone",
-                ]:
-                    if not valor:
+
+                # Validaciones generales de campos obligatorios
+                if (
+                    columna
+                    in [
+                        "geo",
+                        "type",
+                        "alias",
+                        "counterparty_fullname",
+                        "counterparty_id_type",
+                        "counterparty_phone",
+                    ]
+                    and not valor
+                ):
+                    errores.append(
+                        f"El campo '{columna}' no puede estar vacío en la fila {idx}."
+                    )
+
+                # Validación de campos numéricos
+                elif columna == "account_number":
+                    if not valor.isdigit():
                         errores.append(
-                            f"El campo '{columna}' no puede estar vacío en la fila {idx}."
+                            f"El campo 'account_number' debe ser numérico en la fila {idx}."
                         )
-                elif columna in [
-                    "account_number",
-                    "counterparty_id_number",
-                    "beneficiary_institution",
-                ]:
+                    elif len(valor) > 20:
+                        errores.append(
+                            f"El campo 'account_number' debe tener máximo 20 caracteres en la fila {idx}."
+                        )
+
+                elif (
+                    columna == "beneficiary_institution"
+                    or columna == "counterparty_id_number"
+                ):
                     if not valor.isdigit():
                         errores.append(
                             f"El campo '{columna}' debe ser numérico en la fila {idx}."
                         )
+
+                # Validación de teléfono
+                elif columna == "counterparty_phone":
+                    if not re.match(telefono_regex, valor):
+                        errores.append(
+                            f"El campo 'counterparty_phone' debe tener el formato +57XXXXXXXXXX en la fila {idx}."
+                        )
+
+                # Validación de correo electrónico
                 elif columna == "counterparty_email":
                     if not re.match(email_regex, valor):
                         errores.append(

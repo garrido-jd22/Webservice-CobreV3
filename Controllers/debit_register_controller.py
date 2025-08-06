@@ -293,7 +293,6 @@ class DebitRegister:
             )
 
             payload = []
-            index_count = 0
             for ddr, cp in debit_register:
                 payload.append(
                     {
@@ -307,19 +306,10 @@ class DebitRegister:
                         "create_at": ddr.created_at,
                     }
                 )
-                index_count += 1
             print(
                 "payload del get a la base de datos de directdebit por estado",
                 payload,
             )
-
-            print("-------------------------")
-            print("-------------------------")
-            print("------------COUNT NUMBER-------------")
-            print(index_count)
-            print("-------------------------")
-            print("-------------------------")
-            print("-------------------------")
 
             ddr_cobre_state = self.cobre_v3_ddr.filter_direct_debit_by_id(payload)
 
