@@ -17,7 +17,9 @@ from Models.cobre_balance import CobreAvailableServices as CobreAviableServicesM
 from Models.counter_party import CounterParty as CounterPartyModel
 
 # Cobre V3
-from Controllers.cobre_v3_DDR_controller import CobreV3DirectDebit as CobreV3DirectDebitController
+from Controllers.cobre_v3_DDR_controller import (
+    CobreV3DirectDebit as CobreV3DirectDebitController,
+)
 
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
@@ -272,22 +274,26 @@ class DebitRegister:
             logger.error(f"Error en get_debit_register_status: {e}")
             return []
 
-    def get_debit_register_create_at(self, created_at):
+    def get_debit_register_create_at(self, fecha_str):
         try:
+            created_at = datetime.strptime(fecha_str, "%Y-%m-%d")
+
             debit_register = (
                 self.session.query(DirectDebitRegistrationModel, CounterPartyModel)
-                .join(
+                .outerjoin(
                     CounterPartyModel,
                     CounterPartyModel.id
                     == DirectDebitRegistrationModel.fk_id_counterparty,
                 )
                 .filter(
-                    func.date(DirectDebitRegistrationModel.created_at) == created_at
+                    func.date(DirectDebitRegistrationModel.created_at)
+                    == created_at.date()
                 )
                 .all()
             )
 
             payload = []
+            index_count = 0
             for ddr, cp in debit_register:
                 payload.append(
                     {
@@ -301,10 +307,19 @@ class DebitRegister:
                         "create_at": ddr.created_at,
                     }
                 )
+                index_count += 1
             print(
                 "payload del get a la base de datos de directdebit por estado",
                 payload,
             )
+
+            print("-------------------------")
+            print("-------------------------")
+            print("------------COUNT NUMBER-------------")
+            print(index_count)
+            print("-------------------------")
+            print("-------------------------")
+            print("-------------------------")
 
             ddr_cobre_state = self.cobre_v3_ddr.filter_direct_debit_by_id(payload)
 

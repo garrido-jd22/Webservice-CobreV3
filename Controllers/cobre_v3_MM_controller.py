@@ -41,6 +41,10 @@ class CobreV3MoneyMovement:
             imezone=timezone("America/bogota")
         )
         self.scheduler.start()
+        
+    # Destructor de la clase
+    def __del__(self):
+        self.session.close()
 
     @staticmethod
     def send_money_movements(items):

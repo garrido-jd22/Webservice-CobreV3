@@ -13,6 +13,10 @@ class CounterParty:
     # Constructor de la clase
     def __init__(self):
         self.session = Session()
+        
+    # Destructor de la clase
+    def __del__(self):
+        self.session.close()
 
     # Get all counter parties
     def get_all_counter_party(self):
