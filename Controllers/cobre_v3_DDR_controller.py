@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Crear un session global reutilizable
 session = requests.Session()
-adapter = HTTPAdapter(pool_connections=300, pool_maxsize=300)
+adapter = HTTPAdapter(pool_connections=500, pool_maxsize=500)
 session.mount("https://", adapter)
 session.mount("http://", adapter)
 
@@ -61,8 +61,8 @@ class CobreV3DirectDebit:
     def filter_direct_debit_by_id(self, list_ddr):
         result = []
         with ThreadPoolExecutor(
-            max_workers=len(list_ddr)
-        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
+            max_workers=10
+        ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones simultaneas por lote.
             futures = [
                 executor.submit(
                     self.get_cobre_v3_direct_debit_by_id,
@@ -125,7 +125,7 @@ class CobreV3DirectDebit:
     def send_all_direct_debit(self, list_debit):
         result = []
         with ThreadPoolExecutor(
-            max_workers=len(list_debit)
+            max_workers=10
         ) as executor:  # max_workers=5: significa que se harán máximo 10 peticiones al mismo tiempo.
             futures = [
                 executor.submit(self.set_cobre_v3_direct_debit, ddr)

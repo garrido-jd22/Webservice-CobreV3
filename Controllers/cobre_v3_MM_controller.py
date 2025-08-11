@@ -13,6 +13,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from pytz import timezone
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from Database.database import Session
+
 # Configuración del logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -23,7 +24,9 @@ SOURCE_ID = "acc_znB5gf46CU"
 
 from dotenv import load_dotenv
 import os
+
 load_dotenv()
+
 
 class CobreV3MoneyMovement:
 
@@ -41,7 +44,7 @@ class CobreV3MoneyMovement:
             imezone=timezone("America/bogota")
         )
         self.scheduler.start()
-        
+
     # Destructor de la clase
     def __del__(self):
         self.session.close()
@@ -58,7 +61,9 @@ class CobreV3MoneyMovement:
                 # Copia el item y elimina date_debit para el request
                 item_request = dict(item)
                 item_request.pop("date_debit", None)
-                item_request["amount"] = int(item['amount']) * 100  # Convertir a centavos
+                item_request["amount"] = (
+                    int(item["amount"]) * 100
+                )  # Convertir a centavos
 
                 # validate_item(item)
                 requestbody = {
@@ -136,7 +141,7 @@ class CobreV3MoneyMovement:
             items = [items]
 
         results = []
-        with ThreadPoolExecutor(max_workers=100) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [executor.submit(process_item, item) for item in items]
             for future in as_completed(futures):
                 results.append(future.result())

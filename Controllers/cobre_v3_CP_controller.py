@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Crear un session global reutilizable
 session = requests.Session()
-adapter = HTTPAdapter(pool_connections=300, pool_maxsize=300)
+adapter = HTTPAdapter(pool_connections=500, pool_maxsize=500)
 session.mount("https://", adapter)
 session.mount("http://", adapter)
 
@@ -88,7 +88,7 @@ class CobreV3CounterParty:
 
     def filter_counter_party_id_number(self, list_counterparty):
         result = []
-        with ThreadPoolExecutor(max_workers=len(list_counterparty)) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [
                 executor.submit(
                     self.get_cobre_v3_counterparty_by_id_number,
@@ -130,7 +130,7 @@ class CobreV3CounterParty:
 
     def delete_all_counterparties(self, list_id_cp):
         result = []
-        with ThreadPoolExecutor(max_workers=len(list_id_cp)) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [
                 executor.submit(self.delete_cobre_v3_counterparty, cp["id"])
                 for cp in list_id_cp
@@ -173,7 +173,7 @@ class CobreV3CounterParty:
 
     def send_all_counterparties(self, list_counterparty):
         result = []
-        with ThreadPoolExecutor(max_workers=len(list_counterparty)) as executor:
+        with ThreadPoolExecutor(max_workers=10) as executor:
             futures = [
                 executor.submit(self.set_cobre_v3_counterparty, cp)
                 for cp in list_counterparty
